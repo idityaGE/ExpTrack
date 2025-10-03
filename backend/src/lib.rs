@@ -1,9 +1,9 @@
 use sqlx::{Pool, Postgres};
 
-pub mod api;
-pub mod application;
-pub mod domain;
-pub mod infra;
+pub mod handlers;
+pub mod model;
+pub mod routes;
+pub mod middleware;
 
 pub struct AppState {
     pub db: Pool<Postgres>,

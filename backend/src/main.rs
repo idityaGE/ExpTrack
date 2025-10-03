@@ -2,15 +2,18 @@ use axum::http::{
     HeaderValue, Method,
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
 };
-use backend::{AppState, api::router::create_router};
+
+use backend::{AppState, routes::router::create_router};
+use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() {
-    let db_connection_str = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://postgres:password@localhost".to_string());
+    dotenv().ok();
+
+    let db_connection_str = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     let pool = match PgPoolOptions::new()
         .max_connections(10)
