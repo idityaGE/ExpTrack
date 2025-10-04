@@ -1,2 +1,2 @@
 Backend : Rust, Axum, SQLx, PostgreSQL
-Frontend : Expo, React Native, TypeScript
+Frontend : Expo (Mobile App), TypeScript
