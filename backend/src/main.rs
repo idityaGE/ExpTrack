@@ -5,7 +5,7 @@ use axum::http::{
 
 use backend::{AppState, routes::create_router};
 use dotenv::dotenv;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::PgPoolOptions, Executor};
 use std::{fs, sync::Arc};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::EnvFilter;
@@ -34,9 +34,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             err
         })?;
 
-    match fs::read_to_string("db/init.sql") {
+    match fs::read_to_string("migrations/init.up.sql") {
         Ok(content) => {
-            sqlx::query(&content).execute(&pool).await?;
+            sqlx::raw_sql(&content).execute(&pool).await?;
         }
         Err(err) => {
             eprintln!("Could not read init.sql file: {}", err);
@@ -57,7 +57,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = create_router(Arc::new(AppState { db: pool.clone() }))
         .layer(TraceLayer::new_for_http())
         .layer(cors);
-
 
     let bind_addr = "0.0.0.0:8080";
     let listener = tokio::net::TcpListener::bind(bind_addr)

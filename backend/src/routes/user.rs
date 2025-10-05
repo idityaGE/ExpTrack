@@ -9,5 +9,5 @@ use crate::{
 pub fn get_user_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/user", post(create_user))
-        .route("/user/:email", post(login_user))
+        .route("/user/{email}", post(login_user))
 }

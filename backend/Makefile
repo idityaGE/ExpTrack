@@ -1,7 +1,10 @@
 dev:
-	docker-compose up
+	docker-compose up -d
 	
 dev-down:
+	docker-compose down
+
+dev-stop:
 	docker-compose stop
 
 migrate-up:

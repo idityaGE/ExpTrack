@@ -12,5 +12,5 @@ use crate::{
 pub fn get_category_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/category", get(get_all_categories).post(create_category))
-        .route("/category/:id", delete(delete_category))
+        .route("/category/{id}", delete(delete_category))
 }

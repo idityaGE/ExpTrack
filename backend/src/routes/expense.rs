@@ -12,7 +12,7 @@ pub fn get_expense_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/expense", get(get_all_expenses).post(create_expense))
         .route(
-            "/expense/:id",
+            "/expense/{id}",
             get(get_expense_by_id)
                 .put(update_budget)
                 .delete(delete_expense),

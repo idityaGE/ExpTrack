@@ -10,7 +10,7 @@ pub fn get_budget_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/budget", get(get_all_budgets).post(create_budget))
         .route(
-            "/budget/:id",
+            "/budget/{id}",
             get(get_budget_by_id)
                 .put(update_budget)
                 .delete(delete_budget),
