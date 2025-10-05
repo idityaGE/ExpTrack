@@ -16,7 +16,7 @@ Frontend : Expo (Mobile App), TypeScript
 - `/:id` : DELETE (Delete category by ID)
 
 /budget :
-- `/` : GET (Get budget), PUT (Update budget)
+- `/` : GET (Get budget), PUT (Update budget), POST (Set budget)
 - `/reset` : POST (Reset budget)
 
 

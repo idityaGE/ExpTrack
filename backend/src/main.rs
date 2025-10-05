@@ -3,7 +3,7 @@ use axum::http::{
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
 };
 
-use backend::{AppState, routes::router::create_router};
+use backend::{AppState, routes::create_router};
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
