@@ -1,8 +1,8 @@
 dev:
-	docker-compose up -d
+	docker-compose up
 	
 dev-down:
-	docker-compose down
+	docker-compose stop
 
 migrate-up:
 	sqlx migrate run
