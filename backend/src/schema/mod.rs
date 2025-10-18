@@ -9,7 +9,7 @@ use axum::{
 };
 
 #[derive(Serialize, Debug)]
-pub struct ApiResponse<T> {
+pub struct ApiResponse<T: Serialize> {
     pub success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
@@ -18,7 +18,10 @@ pub struct ApiResponse<T> {
     pub status: u16,
 }
 
-impl<T> ApiResponse<T> {
+impl<T> ApiResponse<T>
+where
+    T: Serialize,
+{
     pub fn success(data: T) -> Self {
         Self {
             success: true,

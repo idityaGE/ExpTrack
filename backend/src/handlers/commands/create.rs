@@ -1,9 +1,10 @@
-use std::sync::Arc;
+#![allow(unused_variables)]
 
 use crate::{
     AppState,
     models::user::UserModel,
     schema::{ApiResponse, user::*},
+    utils::jwt::sign,
 };
 use axum::{
     Json,
@@ -11,13 +12,16 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use bcrypt::{DEFAULT_COST, hash};
 use regex::Regex;
+use serde_json::json;
+use std::sync::Arc;
 
 pub async fn create_user(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateUserSchema>,
-) -> ApiResponse<String> {
-    // validate the
+) -> ApiResponse<serde_json::Value> {
+    // validate the payload
     if body.name.len() < 2 {
         return ApiResponse::error("name min length 2", StatusCode::BAD_REQUEST);
     } else if body.password.len() < 8 {
@@ -48,12 +52,46 @@ pub async fn create_user(
         }
     }
 
+    // hash password
+    let password_hash = match hash(&body.password, DEFAULT_COST) {
+        Ok(h) => h,
+        Err(_) => {
+            return ApiResponse::error(
+                "Failed to hash password",
+                StatusCode::INTERNAL_SERVER_ERROR,
+            );
+        }
+    };
+
     // create new user
+    let new_user = match sqlx::query_as::<_, UserModel>(
+        "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
+    )
+    .bind(body.name)
+    .bind(body.email)
+    .bind(password_hash)
+    .fetch_one(&state.db)
+    .await
+    {
+        Ok(u) => u,
+        Err(err) => return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR),
+    };
 
     // create jwt token
+    let token = match sign(new_user.user_id.to_string().clone()) {
+        Ok(t) => t,
+        Err(err) => {
+            return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
 
     // return response
-    return ApiResponse::success("Good".to_string());
+    return ApiResponse::success(
+        json!({
+            "user": new_user,
+            "token": token
+        })
+    );
 }
 
 pub async fn create_expense(

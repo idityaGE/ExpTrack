@@ -6,7 +6,7 @@ use axum::http::{
 use backend::{AppState, routes::create_router};
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
-use std::{fs, sync::Arc};
+use std::sync::Arc;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::EnvFilter;
 
@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             err
         })?;
 
-    println!("Server is running {bind_addr}");
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.map_err(|err| {
         eprintln!("Server error: {}", err);
         err
