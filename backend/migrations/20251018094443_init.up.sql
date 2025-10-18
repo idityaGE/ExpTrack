@@ -1,32 +1,39 @@
+-- Add migration script here
+
 -- NO NEED TO ADD THE CREATE DATABASE IT WILL CREATE FROM THE DATABASE_URL IF NOT EXISTS 
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- USER TABLE
 CREATE TABLE IF NOT EXISTS users (
-    user_id      SERIAL PRIMARY KEY,
+    user_id      UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
     name         VARCHAR(100) NOT NULL,
     email        VARCHAR(255) UNIQUE NOT NULL,
-    passwordhash VARCHAR(255) NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    password_hash VARCHAR(255) NOT NULL,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CATEGORY TABLE
 CREATE TABLE IF NOT EXISTS categories (
     category_id   SERIAL PRIMARY KEY,
+    -- Can be NULL because some categories might be global
+    user_id       UUID, 
     category_name VARCHAR(100) UNIQUE NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_category_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- EXPENSE TABLE
 CREATE TABLE IF NOT EXISTS expenses (
-    expense_id   SERIAL PRIMARY KEY,
+    expense_id   UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
     name         VARCHAR(200) NOT NULL,
     amount       DECIMAL(10,2) NOT NULL,
     date         DATE NOT NULL,
     description  TEXT,
     category_id  INT,
-    user_id      INT NOT NULL,
+    user_id      UUID NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_expense_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -35,12 +42,12 @@ CREATE TABLE IF NOT EXISTS expenses (
 
 -- BUDGET TABLE
 CREATE TABLE IF NOT EXISTS budgets (
-    budget_id   SERIAL PRIMARY KEY,
+    budget_id   UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
     name        VARCHAR(200) NOT NULL,
     amount      DECIMAL(10,2) NOT NULL,
     start_date  DATE NOT NULL,
     end_date    DATE NOT NULL,
-    user_id     INT NOT NULL,
+    user_id     UUID NOT NULL,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_budget_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE

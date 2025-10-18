@@ -5,7 +5,7 @@ use axum::http::{
 
 use backend::{AppState, routes::create_router};
 use dotenv::dotenv;
-use sqlx::{postgres::PgPoolOptions, Executor};
+use sqlx::postgres::PgPoolOptions;
 use std::{fs, sync::Arc};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::EnvFilter;
@@ -34,15 +34,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             err
         })?;
 
-    match fs::read_to_string("migrations/init.up.sql") {
-        Ok(content) => {
-            sqlx::raw_sql(&content).execute(&pool).await?;
-        }
-        Err(err) => {
-            eprintln!("Could not read init.sql file: {}", err);
-            eprintln!("Continuing without schema initialization...");
-        }
-    }
+    // match fs::read_to_string("migrations/init.up.sql") {
+    //     Ok(content) => {
+    //         sqlx::raw_sql(&content).execute(&pool).await?;
+    //     }
+    //     Err(err) => {
+    //         eprintln!("Could not read init.sql file: {}", err);
+    //         eprintln!("Continuing without schema initialization...");
+    //     }
+    // }
 
     let cors = CorsLayer::new()
         .allow_origin(
@@ -66,6 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             err
         })?;
 
+    println!("Server is running {bind_addr}");
     axum::serve(listener, app).await.map_err(|err| {
         eprintln!("Server error: {}", err);
         err
