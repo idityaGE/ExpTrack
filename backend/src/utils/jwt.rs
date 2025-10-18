@@ -2,21 +2,20 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
 }
 
-pub fn sign(data: String) -> Result<String, String> {
+pub fn sign(data: &String) -> Result<String, String> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::days(30))
         .expect("valid timestamp")
         .timestamp() as usize;
 
     let claims = Claims {
-        sub: data,
+        sub: data.clone(),
         exp: expiration,
     };
 

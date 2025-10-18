@@ -8,17 +8,18 @@ use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
+    tracing_subscriber::registry()
+        .with(
             EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| EnvFilter::new("info,tower_http=debug")),
         )
+        .with(tracing_subscriber::fmt::layer())
         .init();
 
     let db_connection_str =
@@ -33,16 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Failed to connect to the database: {}", err);
             err
         })?;
-
-    // match fs::read_to_string("migrations/init.up.sql") {
-    //     Ok(content) => {
-    //         sqlx::raw_sql(&content).execute(&pool).await?;
-    //     }
-    //     Err(err) => {
-    //         eprintln!("Could not read init.sql file: {}", err);
-    //         eprintln!("Continuing without schema initialization...");
-    //     }
-    // }
 
     let cors = CorsLayer::new()
         .allow_origin(
@@ -66,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             err
         })?;
 
-    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    tracing::info!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.map_err(|err| {
         eprintln!("Server error: {}", err);
         err

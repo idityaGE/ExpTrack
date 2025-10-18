@@ -1,19 +1,11 @@
-#![allow(unused_variables)]
-
 use crate::{
     AppState,
     models::user::UserModel,
     schema::{ApiResponse, user::*},
-    utils::jwt::sign,
+    utils::{hash::hash_password, jwt::sign, pattern::is_valid_email},
 };
-use axum::{
-    Json,
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
-};
-use bcrypt::{DEFAULT_COST, hash};
-use regex::Regex;
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+
 use serde_json::json;
 use std::sync::Arc;
 
@@ -28,10 +20,15 @@ pub async fn create_user(
         return ApiResponse::error("password min length 8", StatusCode::BAD_REQUEST);
     }
 
-    let email_regex = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
-    let is_valid_email = email_regex.is_match(&body.email);
-    if !is_valid_email {
-        return ApiResponse::error("Not a valid email", StatusCode::BAD_REQUEST);
+    match is_valid_email(&body.email) {
+        Ok(res) => {
+            if !res {
+                return ApiResponse::error("Not a valid email", StatusCode::BAD_REQUEST);
+            }
+        }
+        Err(err) => {
+            return ApiResponse::error(&err, StatusCode::INTERNAL_SERVER_ERROR);
+        }
     }
 
     // check if user already exits
@@ -53,7 +50,7 @@ pub async fn create_user(
     }
 
     // hash password
-    let password_hash = match hash(&body.password, DEFAULT_COST) {
+    let password_hash = match hash_password(&body.password) {
         Ok(h) => h,
         Err(_) => {
             return ApiResponse::error(
@@ -78,7 +75,7 @@ pub async fn create_user(
     };
 
     // create jwt token
-    let token = match sign(new_user.user_id.to_string().clone()) {
+    let token = match sign(&new_user.email) {
         Ok(t) => t,
         Err(err) => {
             return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR);
@@ -86,12 +83,10 @@ pub async fn create_user(
     };
 
     // return response
-    return ApiResponse::success(
-        json!({
-            "user": new_user,
-            "token": token
-        })
-    );
+    return ApiResponse::success(json!({
+        "user": new_user,
+        "token": token
+    }));
 }
 
 pub async fn create_expense(
