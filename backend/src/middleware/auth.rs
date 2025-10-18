@@ -1,12 +1,17 @@
-use crate::{schema::ApiResponse, utils::jwt::verify};
+use crate::{AppState, schema::ApiResponse, utils::jwt::verify};
 use axum::{
-    extract::Request,
+    extract::{Request, State},
     http::StatusCode,
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use std::sync::Arc;
 
-pub async fn require_auth(mut req: Request, next: Next) -> Response {
+pub async fn require_auth(
+    mut req: Request,
+    next: Next,
+    State(_state): State<Arc<AppState>>,
+) -> Response {
     let auth_header = req
         .headers()
         .get("Authorization")
@@ -33,6 +38,8 @@ pub async fn require_auth(mut req: Request, next: Next) -> Response {
             .into_response();
         }
     };
+
+    // TODO: Fetch from db and check if user exits ?
 
     req.extensions_mut().insert(user_email);
 
