@@ -5,24 +5,18 @@ use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Claims {
-    pub sub: JwtPayload,
+    pub sub: String,
     pub exp: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JwtPayload {
-    pub email: String,
-    pub user_id: Uuid,
-}
-
-pub fn sign(data: JwtPayload) -> Result<String, String> {
+pub fn sign(data: &String) -> Result<String, String> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::days(30))
         .expect("valid timestamp")
         .timestamp() as usize;
 
     let claims = Claims {
-        sub: data,
+        sub: data.clone(), // Convert UUID to string for standard 'sub' claim
         exp: expiration,
     };
 
@@ -40,18 +34,18 @@ pub fn sign(data: JwtPayload) -> Result<String, String> {
     Ok(token)
 }
 
-pub fn verify(token: &str) -> Result<JwtPayload, String> {
+pub fn verify(token: &String) -> Result<Uuid, String> {
     let secret_key = std::env::var("JWT_SECRET").expect("JWT_SECRET is not found in env");
 
     let validation = Validation::default();
     let decoded = decode::<Claims>(
-        token,
+        token.clone(),
         &DecodingKey::from_secret(secret_key.as_ref()),
         &validation,
     );
 
     match decoded {
-        Ok(data) => Ok(data.claims.sub),
+        Ok(data) => Uuid::parse_str(&data.claims.sub).map_err(|e| e.to_string()),
         Err(err) => Err(err.to_string()),
     }
 }

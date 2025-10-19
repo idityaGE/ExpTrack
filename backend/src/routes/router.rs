@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{Router, middleware::from_fn, routing::get};
+use axum::{Router, middleware::from_fn_with_state, routing::get};
 
 use super::health_check;
 use crate::{
@@ -11,10 +11,11 @@ use crate::{
 
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/health_check", get(health_check))
         .merge(get_expense_routes())
         .merge(get_budget_routes())
         .merge(get_category_routes())
+        .route("/health_check", get(health_check))
+        .layer(from_fn_with_state(Arc::clone(&state), require_auth))
         .merge(get_user_routes())
         .with_state(state)
 }

@@ -1,6 +1,9 @@
-use axum::http::{
-    HeaderValue, Method,
-    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+use axum::{
+    Extension,
+    http::{
+        HeaderValue, Method,
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+    },
 };
 
 use backend::{AppState, routes::create_router};
@@ -45,7 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_credentials(true);
 
-    let app = create_router(Arc::new(AppState { db: pool.clone() }))
+    let app_state = Arc::new(AppState { db: pool.clone() });
+
+    let app = create_router(app_state)
         .layer(TraceLayer::new_for_http())
         .layer(cors);
 

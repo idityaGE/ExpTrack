@@ -1,5 +1,6 @@
-use crate::{AppState, schema::ApiResponse, utils::verify};
+use crate::{AppState, models::UserModel, schema::ApiResponse, utils::verify};
 use axum::{
+    body::Body,
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
@@ -8,9 +9,9 @@ use axum::{
 use std::sync::Arc;
 
 pub async fn require_auth(
-    mut req: Request,
+    State(state): State<Arc<AppState>>,
+    mut req: Request<Body>,
     next: Next,
-    State(_state): State<Arc<AppState>>,
 ) -> Response {
     let auth_header = req
         .headers()
@@ -28,20 +29,42 @@ pub async fn require_auth(
         }
     };
 
-    let jwt_payload = match verify(&token) {
+    println!("Token {}", token);
+
+    let user_id = match verify(&token) {
         Ok(c) => c,
-        Err(_) => {
+        Err(err) => {
+            return ApiResponse::<serde_json::Value>::error(&err, StatusCode::UNAUTHORIZED)
+                .into_response();
+        }
+    };
+
+    // TODO: Fetch from db and check if user exits ?
+    let _user = match sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE user_id = $1")
+        .bind(&user_id)
+        .fetch_optional(&state.db)
+        .await
+    {
+        Ok(u) => match u {
+            Some(data) => data,
+            None => {
+                return ApiResponse::<serde_json::Value>::error(
+                    "User doesn't exits",
+                    StatusCode::CONFLICT,
+                )
+                .into_response();
+            }
+        },
+        Err(err) => {
             return ApiResponse::<serde_json::Value>::error(
-                "Failed verify token, recheck",
-                StatusCode::UNAUTHORIZED,
+                &err.to_string(),
+                StatusCode::INTERNAL_SERVER_ERROR,
             )
             .into_response();
         }
     };
 
-    // TODO: Fetch from db and check if user exits ?
-
-    req.extensions_mut().insert(jwt_payload);
+    req.extensions_mut().insert(user_id);
 
     next.run(req).await
 }
