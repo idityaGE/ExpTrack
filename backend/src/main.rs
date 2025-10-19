@@ -1,9 +1,6 @@
-use axum::{
-    Extension,
-    http::{
-        HeaderValue, Method,
-        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
-    },
+use axum::http::{
+    HeaderValue, Method,
+    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
 };
 
 use backend::{AppState, routes::create_router};

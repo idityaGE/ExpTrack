@@ -1,3 +1,4 @@
+#[macro_use]
 pub mod commands;
 pub use commands::*;
 

@@ -39,22 +39,20 @@ pub async fn require_auth(
         }
     };
 
-    // TODO: Fetch from db and check if user exits ?
+    // Fetch from db and check if user exists
     let _user = match sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE user_id = $1")
         .bind(&user_id)
         .fetch_optional(&state.db)
         .await
     {
-        Ok(u) => match u {
-            Some(data) => data,
-            None => {
-                return ApiResponse::<serde_json::Value>::error(
-                    "User doesn't exits",
-                    StatusCode::CONFLICT,
-                )
-                .into_response();
-            }
-        },
+        Ok(Some(data)) => data,
+        Ok(None) => {
+            return ApiResponse::<serde_json::Value>::error(
+                "User doesn't exist",
+                StatusCode::CONFLICT,
+            )
+            .into_response();
+        }
         Err(err) => {
             return ApiResponse::<serde_json::Value>::error(
                 &err.to_string(),

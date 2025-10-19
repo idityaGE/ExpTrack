@@ -47,6 +47,24 @@ where
             status: status.as_u16(),
         }
     }
+
+    pub fn created(data: T) -> Self {
+        Self {
+            success: true,
+            message: None,
+            data: Some(data),
+            status: StatusCode::CREATED.as_u16(),
+        }
+    }
+
+    pub fn with_status(data: T, status: StatusCode) -> Self {
+        Self {
+            success: true,
+            message: None,
+            data: Some(data),
+            status: status.as_u16(),
+        }
+    }
 }
 
 impl<T: Serialize> IntoResponse for ApiResponse<T> {
@@ -56,3 +74,23 @@ impl<T: Serialize> IntoResponse for ApiResponse<T> {
         (status, body).into_response()
     }
 }
+
+impl From<sqlx::Error> for ApiResponse<serde_json::Value> {
+    fn from(err: sqlx::Error) -> Self {
+        Self::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR)
+    }
+}
+
+impl From<String> for ApiResponse<serde_json::Value> {
+    fn from(err: String) -> Self {
+        Self::error(&err, StatusCode::BAD_REQUEST)
+    }
+}
+
+impl From<&str> for ApiResponse<serde_json::Value> {
+    fn from(err: &str) -> Self {
+        Self::error(err, StatusCode::BAD_REQUEST)
+    }
+}
+
+pub type ApiResult<T> = Result<ApiResponse<T>, ApiResponse<serde_json::Value>>;

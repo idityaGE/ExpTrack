@@ -11,8 +11,9 @@ use serde_json::json;
 use crate::{
     AppState,
     models::UserModel,
-    schema::{ApiResponse, LoginUserSchema},
-    utils::{is_valid_email, sign, verify_hash_password},
+    ok_or_err,
+    schema::{ApiResponse, ApiResult, LoginUserSchema},
+    utils::{helper::validate_email, sign, verify_hash_password},
 };
 
 pub async fn get_all_expenses() -> impl IntoResponse {}
@@ -29,58 +30,42 @@ pub async fn login_user(
     Path(email): Path<String>,
     State(state): State<Arc<AppState>>,
     Json(body): Json<LoginUserSchema>,
-) -> ApiResponse<serde_json::Value> {
-    // validate email with regex
-    match is_valid_email(&email) {
-        Ok(res) => {
-            if !res {
-                return ApiResponse::error("Provided email is not valid", StatusCode::BAD_REQUEST);
-            }
-        }
-        Err(err) => {
-            return ApiResponse::error(&err, StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
+) -> ApiResult<serde_json::Value> {
+    validate_email(&email)?;
 
-    // check if user exists
-    let user = match sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE email = $1")
+    let user = sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE email = $1")
         .bind(&email)
         .fetch_optional(&state.db)
-        .await
-    {
-        Ok(u) => match u {
-            Some(data) => data,
-            None => {
-                return ApiResponse::error("User doesn't exits", StatusCode::CONFLICT);
-            }
-        },
-        Err(err) => {
-            return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+        .await?;
 
-    // match password hash
-    match verify_hash_password(&body.password, &user.password_hash) {
-        Ok(res) => {
-            if !res {
-                return ApiResponse::error(
-                    "Password doesn't match, please check again",
-                    StatusCode::UNAUTHORIZED,
-                );
-            }
-        }
-        Err(err) => return ApiResponse::error(err, StatusCode::INTERNAL_SERVER_ERROR),
+    if user.is_none() {
+        return Err(ApiResponse::error(
+            "User doesn't exists",
+            StatusCode::UNAUTHORIZED,
+        ));
     }
 
-    // create token
-    let token = match sign(&user.user_id.to_string()) {
-        Ok(token) => token,
-        Err(err) => return ApiResponse::error(&err, StatusCode::INTERNAL_SERVER_ERROR),
-    };
+    let user = user.unwrap();
 
-    // return response
-    ApiResponse::success(json!( {
-      "token": token,
-      "user": user
-    }))
+    let password_matches = ok_or_err!(
+        verify_hash_password(&body.password, &user.password_hash),
+        "Failed to verify password",
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+
+    if !password_matches {
+        return Err(ApiResponse::error(
+            "Password doesn't match, please check again",
+            StatusCode::UNAUTHORIZED,
+        ));
+    }
+
+    let token = sign(&user.user_id.to_string())
+        .map_err(|e| ApiResponse::error(&e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?;
+
+    // Return success response
+    Ok(ApiResponse::success(json!({
+        "token": token,
+        "user": user
+    })))
 }

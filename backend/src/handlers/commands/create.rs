@@ -2,110 +2,72 @@ use crate::{
     AppState,
     models::UserModel,
     schema::{
-        ApiResponse, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
+        ApiResponse, ApiResult, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
         CreateUserSchema,
     },
-    utils::{hash_password, is_valid_email, sign},
+    utils::{
+        hash_password,
+        helper::{user_exists, validate_email, validate_name, validate_password},
+        sign,
+    },
 };
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
-
 use serde_json::json;
 use std::sync::Arc;
 
 pub async fn create_user(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateUserSchema>,
-) -> ApiResponse<serde_json::Value> {
-    // validate the payload
-    if body.name.len() < 2 {
-        return ApiResponse::error("name min length 2", StatusCode::BAD_REQUEST);
-    } else if body.password.len() < 8 {
-        return ApiResponse::error("password min length 8", StatusCode::BAD_REQUEST);
+) -> ApiResult<serde_json::Value> {
+    validate_name(&body.name)?;
+    validate_password(&body.password)?;
+    validate_email(&body.email)?;
+
+    let exists = user_exists(&state.db, &body.email).await?;
+    if exists {
+        return Err(ApiResponse::error(
+            "User already exists",
+            StatusCode::CONFLICT,
+        ));
     }
 
-    match is_valid_email(&body.email) {
-        Ok(res) => {
-            if !res {
-                return ApiResponse::error("Not a valid email", StatusCode::BAD_REQUEST);
-            }
-        }
-        Err(err) => {
-            return ApiResponse::error(&err, StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
+    let password_hash = hash_password(&body.password)
+        .map_err(|e| ApiResponse::error(&e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    // check if user already exits
-    let user_exists = sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE email = $1")
-        .bind(&body.email)
-        .fetch_optional(&state.db)
-        .await;
-
-    match user_exists {
-        Ok(Some(_)) => {
-            return ApiResponse::error("User already exists", StatusCode::CONFLICT);
-        }
-        Ok(None) => {
-            // User doesn't exist, continue with creation
-        }
-        Err(_e) => {
-            return ApiResponse::error("Database error", StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // hash password
-    let password_hash = match hash_password(&body.password) {
-        Ok(h) => h,
-        Err(_) => {
-            return ApiResponse::error(
-                "Failed to hash password",
-                StatusCode::INTERNAL_SERVER_ERROR,
-            );
-        }
-    };
-
-    // create new user
-    let new_user = match sqlx::query_as::<_, UserModel>(
+    let new_user = sqlx::query_as::<_, UserModel>(
         "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
     )
     .bind(body.name)
     .bind(body.email)
     .bind(password_hash)
     .fetch_one(&state.db)
-    .await
-    {
-        Ok(u) => u,
-        Err(err) => return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR),
-    };
+    .await?;
 
-    // create jwt token
-    let token = match sign(&new_user.user_id.to_string()) {
-        Ok(t) => t,
-        Err(err) => {
-            return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+    let token = sign(&new_user.user_id.to_string())
+        .map_err(|e| ApiResponse::error(&e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    // return response
-    return ApiResponse::success(json!({
-        "user": new_user,
-        "token": token
-    }));
+    Ok(ApiResponse::success(
+        json!({"user": new_user, "token": token}),
+    ))
 }
 
 pub async fn create_expense(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateExpenseSchema>,
 ) -> impl IntoResponse {
+    // TODO: implement
 }
 
 pub async fn create_budget(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateBudgetSchema>,
 ) -> impl IntoResponse {
+    // TODO: implement
 }
 
 pub async fn create_category(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateCategorySchema>,
 ) -> impl IntoResponse {
+    // TODO: implement
 }
