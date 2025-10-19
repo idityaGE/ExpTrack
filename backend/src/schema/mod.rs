@@ -1,5 +1,8 @@
 use serde::Serialize;
 
+pub mod budget;
+pub mod category;
+pub mod expense;
 pub mod user;
 
 use axum::{
