@@ -1,12 +1,11 @@
 use crate::{
     AppState,
-    models::user::UserModel,
-    schema::{ApiResponse, user::*},
-    utils::{
-        hash::hash_password,
-        jwt::{JwtPayload, sign},
-        pattern::is_valid_email,
+    models::UserModel,
+    schema::{
+        ApiResponse, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
+        CreateUserSchema,
     },
+    utils::{JwtPayload, hash_password, is_valid_email, sign},
 };
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 
@@ -100,18 +99,18 @@ pub async fn create_user(
 
 pub async fn create_expense(
     State(state): State<Arc<AppState>>,
-    Json(body): Json<serde_json::Value>,
+    Json(body): Json<CreateExpenseSchema>,
 ) -> impl IntoResponse {
 }
 
 pub async fn create_budget(
     State(state): State<Arc<AppState>>,
-    Json(body): Json<serde_json::Value>,
+    Json(body): Json<CreateBudgetSchema>,
 ) -> impl IntoResponse {
 }
 
 pub async fn create_category(
     State(state): State<Arc<AppState>>,
-    Json(body): Json<serde_json::Value>,
+    Json(body): Json<CreateCategorySchema>,
 ) -> impl IntoResponse {
 }

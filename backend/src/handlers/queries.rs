@@ -10,13 +10,9 @@ use serde_json::json;
 
 use crate::{
     AppState,
-    models::user::UserModel,
-    schema::{ApiResponse, user::LoginUserSchema},
-    utils::{
-        hash::verify_hash_password,
-        jwt::{JwtPayload, sign},
-        pattern::is_valid_email,
-    },
+    models::UserModel,
+    schema::{ApiResponse, LoginUserSchema},
+    utils::{JwtPayload, is_valid_email, sign, verify_hash_password},
 };
 
 pub async fn get_all_expenses() -> impl IntoResponse {}

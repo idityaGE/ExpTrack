@@ -19,12 +19,22 @@ CREATE TABLE IF NOT EXISTS categories (
     category_id   SERIAL PRIMARY KEY,
     -- Can be NULL because some categories might be global
     user_id       UUID, 
-    category_name VARCHAR(100) UNIQUE NOT NULL,
+    category_name VARCHAR(100) NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_category_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    CONSTRAINT fk_category_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT unique_user_category UNIQUE (user_id, category_name)
 );
 
+INSERT INTO categories (user_id, category_name) VALUES
+    (NULL, 'Food'),
+    (NULL, 'Transportation'),
+    (NULL, 'Utilities'),
+    (NULL, 'Entertainment'),
+    (NULL, 'Healthcare'),
+    (NULL, 'Education'),
+    (NULL, 'Miscellaneous');
+    
 -- EXPENSE TABLE
 CREATE TABLE IF NOT EXISTS expenses (
     expense_id   UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),

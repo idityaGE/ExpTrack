@@ -1,4 +1,4 @@
-use crate::{AppState, schema::ApiResponse, utils::jwt::verify};
+use crate::{AppState, schema::ApiResponse, utils::verify};
 use axum::{
     extract::{Request, State},
     http::StatusCode,
