@@ -2,7 +2,11 @@ use crate::{
     AppState,
     models::user::UserModel,
     schema::{ApiResponse, user::*},
-    utils::{hash::hash_password, jwt::sign, pattern::is_valid_email},
+    utils::{
+        hash::hash_password,
+        jwt::{JwtPayload, sign},
+        pattern::is_valid_email,
+    },
 };
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 
@@ -74,8 +78,13 @@ pub async fn create_user(
         Err(err) => return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR),
     };
 
+    let token_payload = JwtPayload {
+        email: new_user.email.clone(),
+        user_id: new_user.user_id.clone(),
+    };
+
     // create jwt token
-    let token = match sign(&new_user.email) {
+    let token = match sign(token_payload) {
         Ok(t) => t,
         Err(err) => {
             return ApiResponse::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR);

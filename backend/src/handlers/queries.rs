@@ -12,7 +12,11 @@ use crate::{
     AppState,
     models::user::UserModel,
     schema::{ApiResponse, user::LoginUserSchema},
-    utils::{hash::verify_hash_password, jwt::sign, pattern::is_valid_email},
+    utils::{
+        hash::verify_hash_password,
+        jwt::{JwtPayload, sign},
+        pattern::is_valid_email,
+    },
 };
 
 pub async fn get_all_expenses() -> impl IntoResponse {}
@@ -72,8 +76,13 @@ pub async fn login_user(
         Err(err) => return ApiResponse::error(err, StatusCode::INTERNAL_SERVER_ERROR),
     }
 
+    let token_payload = JwtPayload {
+        email: user.email.clone(),
+        user_id: user.user_id.clone(),
+    };
+
     // create token
-    let token = match sign(&email) {
+    let token = match sign(token_payload) {
         Ok(token) => token,
         Err(err) => return ApiResponse::error(&err, StatusCode::INTERNAL_SERVER_ERROR),
     };

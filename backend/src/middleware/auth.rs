@@ -21,14 +21,14 @@ pub async fn require_auth(
         Some(h) if h.starts_with("Bearer ") => h.trim_start_matches("Bearer ").to_string(),
         _ => {
             return ApiResponse::<serde_json::Value>::error(
-                "Invalid Token",
+                "Auth token missing",
                 StatusCode::UNAUTHORIZED,
             )
             .into_response();
         }
     };
 
-    let user_email = match verify(&token) {
+    let jwt_payload = match verify(&token) {
         Ok(c) => c,
         Err(_) => {
             return ApiResponse::<serde_json::Value>::error(
@@ -41,7 +41,7 @@ pub async fn require_auth(
 
     // TODO: Fetch from db and check if user exits ?
 
-    req.extensions_mut().insert(user_email);
+    req.extensions_mut().insert(jwt_payload);
 
     next.run(req).await
 }

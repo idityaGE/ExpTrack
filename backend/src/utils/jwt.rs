@@ -1,21 +1,28 @@
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Claims {
-    pub sub: String,
+    pub sub: JwtPayload,
     pub exp: usize,
 }
 
-pub fn sign(data: &String) -> Result<String, String> {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JwtPayload {
+    pub email: String,
+    pub user_id: Uuid,
+}
+
+pub fn sign(data: JwtPayload) -> Result<String, String> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::days(30))
         .expect("valid timestamp")
         .timestamp() as usize;
 
     let claims = Claims {
-        sub: data.clone(),
+        sub: data,
         exp: expiration,
     };
 
@@ -33,7 +40,7 @@ pub fn sign(data: &String) -> Result<String, String> {
     Ok(token)
 }
 
-pub fn verify(token: &str) -> Result<String, String> {
+pub fn verify(token: &str) -> Result<JwtPayload, String> {
     let secret_key = std::env::var("JWT_SECRET").expect("JWT_SECRET is not found in env");
 
     let validation = Validation::default();
