@@ -1,4 +1,4 @@
-use crate::schema::ApiResponse;
+use crate::{models::UserModel, schema::ApiResponse};
 use axum::http::StatusCode;
 
 pub fn validate_name(name: &str) -> Result<(), ApiResponse<serde_json::Value>> {
@@ -32,17 +32,33 @@ pub fn validate_email(email: &str) -> Result<(), ApiResponse<serde_json::Value>>
     }
 }
 
-// Database helpers
+pub async fn get_user_by_email(
+    db: &sqlx::PgPool,
+    email: &str,
+) -> Result<Option<UserModel>, ApiResponse<serde_json::Value>> {
+    sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE email = $1")
+        .bind(email)
+        .fetch_optional(db)
+        .await
+        .map_err(|e| ApiResponse::error(&e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))
+}
+
+pub async fn get_user_by_id(
+    db: &sqlx::PgPool,
+    user_id: &uuid::Uuid,
+) -> Result<Option<UserModel>, ApiResponse<serde_json::Value>> {
+    sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE user_id = $1")
+        .bind(user_id)
+        .fetch_optional(db)
+        .await
+        .map_err(|e| ApiResponse::error(&e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))
+}
+
 pub async fn user_exists(
     db: &sqlx::PgPool,
     email: &str,
 ) -> Result<bool, ApiResponse<serde_json::Value>> {
-    sqlx::query_as::<_, crate::models::UserModel>("SELECT * FROM users WHERE email = $1")
-        .bind(email)
-        .fetch_optional(db)
-        .await
-        .map(|u| u.is_some())
-        .map_err(|_| ApiResponse::error("Database error", StatusCode::INTERNAL_SERVER_ERROR))
+    get_user_by_email(db, email).await.map(|u| u.is_some())
 }
 
 #[macro_export]

@@ -23,8 +23,7 @@ pub async fn create_user(
     validate_password(&body.password)?;
     validate_email(&body.email)?;
 
-    let exists = user_exists(&state.db, &body.email).await?;
-    if exists {
+    if user_exists(&state.db, &body.email).await? {
         return Err(ApiResponse::error(
             "User already exists",
             StatusCode::CONFLICT,

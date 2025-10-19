@@ -1,4 +1,4 @@
-use crate::{AppState, models::UserModel, schema::ApiResponse, utils::verify};
+use crate::{AppState, schema::ApiResponse, utils::{verify, helper::get_user_by_id}};
 use axum::{
     body::Body,
     extract::{Request, State},
@@ -29,8 +29,6 @@ pub async fn require_auth(
         }
     };
 
-    println!("Token {}", token);
-
     let user_id = match verify(&token) {
         Ok(c) => c,
         Err(err) => {
@@ -39,13 +37,8 @@ pub async fn require_auth(
         }
     };
 
-    // Fetch from db and check if user exists
-    let _user = match sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE user_id = $1")
-        .bind(&user_id)
-        .fetch_optional(&state.db)
-        .await
-    {
-        Ok(Some(data)) => data,
+    let _user = match get_user_by_id(&state.db, &user_id).await {
+        Ok(Some(user)) => user,
         Ok(None) => {
             return ApiResponse::<serde_json::Value>::error(
                 "User doesn't exist",
@@ -54,11 +47,7 @@ pub async fn require_auth(
             .into_response();
         }
         Err(err) => {
-            return ApiResponse::<serde_json::Value>::error(
-                &err.to_string(),
-                StatusCode::INTERNAL_SERVER_ERROR,
-            )
-            .into_response();
+            return err.into_response();
         }
     };
 

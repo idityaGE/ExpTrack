@@ -9,11 +9,12 @@ use axum::{
 use serde_json::json;
 
 use crate::{
-    AppState,
-    models::UserModel,
-    ok_or_err,
+    AppState, ok_or_err,
     schema::{ApiResponse, ApiResult, LoginUserSchema},
-    utils::{helper::validate_email, sign, verify_hash_password},
+    utils::{
+        helper::{get_user_by_email, validate_email},
+        sign, verify_hash_password,
+    },
 };
 
 pub async fn get_all_expenses() -> impl IntoResponse {}
@@ -33,10 +34,7 @@ pub async fn login_user(
 ) -> ApiResult<serde_json::Value> {
     validate_email(&email)?;
 
-    let user = sqlx::query_as::<_, UserModel>("SELECT * FROM users WHERE email = $1")
-        .bind(&email)
-        .fetch_optional(&state.db)
-        .await?;
+    let user = get_user_by_email(&state.db, &email).await?;
 
     if user.is_none() {
         return Err(ApiResponse::error(
