@@ -1,15 +1,17 @@
 use std::sync::Arc;
 
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
-    response::IntoResponse,
 };
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::{
-    AppState, ok_or_err,
+    AppState,
+    models::{BudgetModel, CategoryModel, ExpenseModel},
+    ok_or_err,
     schema::{ApiResponse, ApiResult, LoginUserSchema},
     utils::{
         helper::{get_user_by_email, validate_email},
@@ -17,15 +19,107 @@ use crate::{
     },
 };
 
-pub async fn get_all_expenses() -> impl IntoResponse {}
+pub async fn get_all_expenses(
+    Extension(user_id): Extension<Uuid>,
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<serde_json::Value> {
+    let all_expenses = sqlx::query_as::<_, ExpenseModel>(
+        "SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC",
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await?;
 
-pub async fn get_expense_by_id() -> impl IntoResponse {}
+    Ok(ApiResponse::success(json!({
+        "expenses": all_expenses
+    })))
+}
 
-pub async fn get_all_categories() -> impl IntoResponse {}
+pub async fn get_expense_by_id(
+    Path(id): Path<String>,
+    Extension(user_id): Extension<Uuid>,
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<serde_json::Value> {
+    let expense_id = Uuid::parse_str(&id)
+        .map_err(|_| ApiResponse::error("Invalid expense ID format", StatusCode::BAD_REQUEST))?;
 
-pub async fn get_all_budgets() -> impl IntoResponse {}
+    let expense = sqlx::query_as::<_, ExpenseModel>(
+        "SELECT * FROM expenses WHERE expense_id = $1 AND user_id = $2",
+    )
+    .bind(expense_id)
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await?;
 
-pub async fn get_budget_by_id() -> impl IntoResponse {}
+    match expense {
+        Some(expense) => Ok(ApiResponse::success(json!({
+            "expense": expense
+        }))),
+        None => Err(ApiResponse::error(
+            "Expense not found",
+            StatusCode::NOT_FOUND,
+        )),
+    }
+}
+
+pub async fn get_all_categories(
+    Extension(user_id): Extension<Uuid>,
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<serde_json::Value> {
+    let all_categories = sqlx::query_as::<_, CategoryModel>(
+        "SELECT * FROM categories WHERE user_id = $1 OR user_id IS NULL",
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(ApiResponse::success(json!({
+        "categories": all_categories
+    })))
+}
+
+pub async fn get_all_budgets(
+    Extension(user_id): Extension<Uuid>,
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<serde_json::Value> {
+    let all_budgets = sqlx::query_as::<_, BudgetModel>(
+        "SELECT * FROM budgets WHERE user_id = $1 ORDER BY start_date DESC",
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(ApiResponse::success(json!({
+        "budgets": all_budgets
+    })))
+}
+
+pub async fn get_budget_by_id(
+    Path(id): Path<String>,
+    Extension(user_id): Extension<Uuid>,
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<serde_json::Value> {
+    let budget_id = Uuid::parse_str(&id)
+        .map_err(|_| ApiResponse::error("Invalid budget ID format", StatusCode::BAD_REQUEST))?;
+
+    let budget = sqlx::query_as::<_, BudgetModel>(
+        "SELECT * FROM budgets WHERE budget_id = $1 AND user_id = $2",
+    )
+    .bind(budget_id)
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await?;
+
+    match budget {
+        Some(budget) => Ok(ApiResponse::success(json!({
+            "budget": budget
+        }))),
+        None => Err(ApiResponse::error(
+            "Budget not found",
+            StatusCode::NOT_FOUND,
+        )),
+    }
+}
 
 pub async fn login_user(
     Path(email): Path<String>,
@@ -61,7 +155,6 @@ pub async fn login_user(
     let token = sign(&user.user_id.to_string())
         .map_err(|e| ApiResponse::error(&e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    // Return success response
     Ok(ApiResponse::success(json!({
         "token": token,
         "user": user
