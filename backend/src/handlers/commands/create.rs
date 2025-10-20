@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    models::UserModel,
+    models::{ExpenseModel, UserModel},
     schema::{
         ApiResponse, ApiResult, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
         CreateUserSchema,
@@ -11,9 +11,10 @@ use crate::{
         sign,
     },
 };
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{Extension, Json, extract::State, http::StatusCode};
 use serde_json::json;
 use std::sync::Arc;
+use uuid::Uuid;
 
 pub async fn create_user(
     State(state): State<Arc<AppState>>,
@@ -51,22 +52,53 @@ pub async fn create_user(
 }
 
 pub async fn create_expense(
+    Extension(user_id): Extension<Uuid>,
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateExpenseSchema>,
-) -> impl IntoResponse {
-    // TODO: implement
+) -> ApiResult<serde_json::Value> {
+    validate_name(&body.name)?;
+    if body.amount <= 0 {
+        return Err(ApiResponse::error(
+            "Amount can't be less than zero",
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
+    println!("{:?}", body);
+
+    let new_expense = sqlx::query_as::<_, ExpenseModel>(
+        "INSERT INTO expenses (name, amount, date, description, category_id, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
+    )
+    .bind(body.name)
+    .bind(body.amount)
+    .bind(body.date)
+    .bind(body.description)
+    .bind(body.category_id)
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(ApiResponse::success(json!({
+        "expense": new_expense
+    })))
 }
 
 pub async fn create_budget(
+    Extension(user_id): Extension<Uuid>,
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateBudgetSchema>,
-) -> impl IntoResponse {
-    // TODO: implement
+) -> ApiResult<serde_json::Value> {
+    Ok(ApiResponse::success(json!({
+        "message": "still work in progres"
+    })))
 }
 
 pub async fn create_category(
+    Extension(user_id): Extension<Uuid>,
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateCategorySchema>,
-) -> impl IntoResponse {
-    // TODO: implement
+) -> ApiResult<serde_json::Value> {
+    Ok(ApiResponse::success(json!({
+        "message": "still work in progres"
+    })))
 }

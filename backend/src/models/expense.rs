@@ -7,10 +7,10 @@ use uuid::Uuid;
 pub struct ExpenseModel {
     pub expense_id: Uuid,
     pub name: String,
-    pub amount: f32,
+    pub amount: i64,
     pub date: chrono::NaiveDate,
     pub description: Option<String>,
-    pub category_id: Option<u64>,
+    pub category_id: Option<i32>,
     pub user_id: Uuid,
     #[serde(rename = "createdAt")]
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,

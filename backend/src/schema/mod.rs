@@ -75,6 +75,8 @@ impl<T: Serialize> IntoResponse for ApiResponse<T> {
     }
 }
 
+// Implement From for common error types to use ? operator
+// These From implementations tell Rust: "If you see this error type, automatically convert it to an ApiResponse with the appropriate status code."
 impl From<sqlx::Error> for ApiResponse<serde_json::Value> {
     fn from(err: sqlx::Error) -> Self {
         Self::error(&err.to_string(), StatusCode::INTERNAL_SERVER_ERROR)

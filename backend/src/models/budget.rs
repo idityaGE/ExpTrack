@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct BudgetModel {
     pub budget_id: Uuid,
     pub name: String,
-    pub amount: f32,
+    pub amount: i64,
     #[serde(rename = "startDate")]
     pub start_date: chrono::NaiveDate,
     #[serde(rename = "endDate")]

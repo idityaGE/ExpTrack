@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, FromRow, Debug)]
 #[allow(non_snake_case)]
 pub struct CategoryModel {
-    pub category_id: u64,
+    pub category_id: i32,
     pub user_id: Option<Uuid>,
     #[serde(rename = "categoryName")]
     pub category_name: String,

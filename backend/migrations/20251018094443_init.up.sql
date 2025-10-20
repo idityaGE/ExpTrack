@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS categories (
     -- Can be NULL because some categories might be global
     user_id       UUID, 
     category_name VARCHAR(100) NOT NULL,
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_category_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT unique_user_category UNIQUE (user_id, category_name)
 );
@@ -39,13 +39,14 @@ INSERT INTO categories (user_id, category_name) VALUES
 CREATE TABLE IF NOT EXISTS expenses (
     expense_id   UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
     name         VARCHAR(200) NOT NULL,
-    amount       DECIMAL(10,2) NOT NULL,
+    -- Store number in plain integer format (e.g., 1999 for Rs. 19.99)
+    amount       BIGINT NOT NULL,
     date         DATE NOT NULL,
     description  TEXT,
     category_id  INT,
     user_id      UUID NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_expense_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_expense_category FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL
 );
@@ -54,12 +55,12 @@ CREATE TABLE IF NOT EXISTS expenses (
 CREATE TABLE IF NOT EXISTS budgets (
     budget_id   UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
     name        VARCHAR(200) NOT NULL,
-    amount      DECIMAL(10,2) NOT NULL,
+    amount      BIGINT NOT NULL,
     start_date  DATE NOT NULL,
     end_date    DATE NOT NULL,
     user_id     UUID NOT NULL,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_budget_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
