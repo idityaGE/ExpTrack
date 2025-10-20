@@ -9,3 +9,13 @@ pub struct CreateExpenseSchema {
     pub description: Option<String>,
     pub category_id: Option<i32>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateExpenseSchema {
+    pub name: Option<String>,
+    pub amount: Option<i64>,
+    pub date: Option<chrono::NaiveDate>,
+    pub description: Option<String>,
+    pub category_id: Option<i32>,
+}
