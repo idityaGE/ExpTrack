@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    models::{ExpenseModel, UserModel},
+    models::{BudgetModel, CategoryModel, ExpenseModel, UserModel},
     schema::{
         ApiResponse, ApiResult, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
         CreateUserSchema,
@@ -88,8 +88,35 @@ pub async fn create_budget(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateBudgetSchema>,
 ) -> ApiResult<serde_json::Value> {
+    validate_name(&body.name)?;
+
+    if body.amount <= 0 {
+        return Err(ApiResponse::error(
+            "Amount can't be less than zero",
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
+    if body.end_date <= body.start_date {
+        return Err(ApiResponse::error(
+            "End date must be after start date",
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
+    let new_budget = sqlx::query_as::<_, BudgetModel>(
+        "INSERT INTO budgets (name, amount, start_date, end_date, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *"
+    )
+    .bind(body.name)
+    .bind(body.amount)
+    .bind(body.start_date)
+    .bind(body.end_date)
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
     Ok(ApiResponse::success(json!({
-        "message": "still work in progres"
+        "budget": new_budget
     })))
 }
 
@@ -98,7 +125,37 @@ pub async fn create_category(
     State(state): State<Arc<AppState>>,
     Json(body): Json<CreateCategorySchema>,
 ) -> ApiResult<serde_json::Value> {
+    if body.category_name.trim().is_empty() {
+        return Err(ApiResponse::error(
+            "Category name cannot be empty",
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
+    let existing_category = sqlx::query_as::<_, CategoryModel>(
+        "SELECT * FROM categories WHERE user_id = $1 AND category_name = $2",
+    )
+    .bind(user_id)
+    .bind(&body.category_name)
+    .fetch_optional(&state.db)
+    .await?;
+
+    if existing_category.is_some() {
+        return Err(ApiResponse::error(
+            "Category with this name already exists",
+            StatusCode::CONFLICT,
+        ));
+    }
+
+    let new_category = sqlx::query_as::<_, CategoryModel>(
+        "INSERT INTO categories (category_name, user_id) VALUES ($1, $2) RETURNING *",
+    )
+    .bind(body.category_name)
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
     Ok(ApiResponse::success(json!({
-        "message": "still work in progres"
+        "category": new_category
     })))
 }
