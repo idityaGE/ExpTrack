@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Pressable, type TextInput, View, Alert } from 'react-native';
+import { Pressable, type TextInput, View } from 'react-native';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircleIcon } from 'lucide-react-native';
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
@@ -51,9 +53,9 @@ export function SignUpForm() {
     },
     onError: (error: Error) => {
       if (error instanceof ApiError) {
-        Alert.alert('Registration Failed', error.message);
+        console.log('Registration Failed', error.message);
       } else {
-        Alert.alert('Registration Failed', 'An unexpected error occurred');
+        console.log('Registration Failed', 'An unexpected error occurred');
       }
     }
   })
@@ -69,6 +71,8 @@ export function SignUpForm() {
   const onEmailSubmitEditing = () => {
     passwordInputRef.current?.focus();
   }
+
+  const { error, isError } = registerMutation;
 
   return (
     <View className="gap-6">
@@ -143,8 +147,10 @@ export function SignUpForm() {
                   <Input
                     ref={passwordInputRef}
                     id="password"
+                    placeholder='**********'
                     secureTextEntry
                     returnKeyType="send"
+                    autoCapitalize='none'
                     onSubmitEditing={onSubmit}
                     onBlur={onBlur}
                     onChangeText={onChange}
@@ -154,6 +160,14 @@ export function SignUpForm() {
               />
               {errors.password && (
                 <Text className="text-sm text-destructive">{errors.password.message}</Text>
+              )}
+            </View>
+            <View className='gap-1.5'>
+              {isError && (
+                <Alert variant="destructive" className="mb-4" icon={AlertCircleIcon}>
+                  <AlertTitle className="font-medium">Registration Failed</AlertTitle>
+                  <AlertDescription>{error?.message || "An unexpected error occurred"}</AlertDescription>
+                </Alert>
               )}
             </View>
             <Button

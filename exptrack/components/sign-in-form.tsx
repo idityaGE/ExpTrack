@@ -9,9 +9,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircleIcon } from 'lucide-react-native'
 import { useRouter } from 'expo-router';
-import * as React from 'react';
-import { Pressable, type TextInput, View, Alert } from 'react-native';
+import { Pressable, type TextInput, View } from 'react-native';
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
@@ -20,11 +21,12 @@ import { useMutation } from '@tanstack/react-query'
 import { loginUser } from '@/api/user'
 import { ApiError } from '@/schema'
 import { useAuth } from '@/store/auth-context'
+import { useRef } from 'react';
 
 export function SignInForm() {
   const router = useRouter()
   const { login } = useAuth()
-  const passwordInputRef = React.useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const { control, handleSubmit, formState: { errors } } = useForm<LoginUserType>({
     resolver: zodResolver(LoginUser),
@@ -49,9 +51,9 @@ export function SignInForm() {
     },
     onError: (error: Error) => {
       if (error instanceof ApiError) {
-        Alert.alert('Login Failed', error.message);
+        console.log('Login Failed', error.message);
       } else {
-        Alert.alert('Login Failed', 'An unexpected error occurred');
+        console.log('Login Failed', 'An unexpected error occurred');
       }
     }
   })
@@ -63,6 +65,8 @@ export function SignInForm() {
   const onEmailSubmitEditing = () => {
     passwordInputRef.current?.focus();
   }
+
+  const { error, isError } = loginMutation;
 
   return (
     <View className="gap-6">
@@ -111,6 +115,7 @@ export function SignInForm() {
                   <Input
                     ref={passwordInputRef}
                     id="password"
+                    autoCapitalize='none'
                     secureTextEntry
                     returnKeyType="send"
                     onSubmitEditing={onSubmit}
@@ -122,6 +127,14 @@ export function SignInForm() {
               />
               {errors.password && (
                 <Text className="text-sm text-destructive">{errors.password.message}</Text>
+              )}
+            </View>
+            <View className='gap-1.5'>
+              {isError && (
+                <Alert variant="destructive" className="mb-4" icon={AlertCircleIcon}>
+                  <AlertTitle className="font-medium">Login Failed</AlertTitle>
+                  <AlertDescription>{error?.message || "An unexpected error occurred"}</AlertDescription>
+                </Alert>
               )}
             </View>
             <Button
