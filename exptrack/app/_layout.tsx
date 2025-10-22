@@ -1,6 +1,6 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import "./global.css"
 import { AuthProvider, useAuth } from "@/store/auth-context";
 import { useEffect } from "react";
@@ -28,12 +28,14 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
         <SafeAreaProvider>
-          <RouteGuard>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-            </Stack>
-          </RouteGuard>
+          <SafeAreaView style={{ flex: 1 }}>
+            <RouteGuard>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+              </Stack>
+            </RouteGuard>
+          </SafeAreaView>
         </SafeAreaProvider>
       </AuthProvider>
     </GestureHandlerRootView>
