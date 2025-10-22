@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { deleteItemAsync, getItemAsync, setItemAsync } from "expo-secure-store"
+import { deleteItemAsync, setItemAsync, getItem } from "expo-secure-store"
 
 export interface User {
   userId: string,
@@ -38,10 +38,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
 
-    const loadAuthState = async () => {
+    const loadAuthState = () => {
       try {
-        const storedToken = await getItemAsync('authToken');
-        const storedUserData = await getItemAsync('userData');
+        const storedToken = getItem('authToken');
+        const storedUserData = getItem('userData');
 
         if (storedToken && storedUserData) {
           setToken(storedToken);

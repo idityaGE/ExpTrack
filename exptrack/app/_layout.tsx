@@ -8,13 +8,23 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeToggle } from '@/components/theme-toggle';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+})
 
 const RouteGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
@@ -22,12 +32,16 @@ const RouteGuard = ({ children }: { children: React.ReactNode }) => {
   const segments = useSegments();
 
   useEffect(() => {
+    if (isLoading) return;
+
     const isAuthGroup = segments[0] === "auth";
-    if (!user && !isAuthGroup && !isLoading)
+
+    if (!user && !isAuthGroup) {
       router.replace("/auth/login");
-    else if (user && isAuthGroup && !isLoading)
+    } else if (user && isAuthGroup) {
       router.replace("/");
-  }, [user, segments])
+    }
+  }, [user, isLoading, segments])
 
   return <>{children}</>
 }
@@ -38,18 +52,22 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-        <AuthProvider>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{
-              title: 'ExpTrack',
-              headerTransparent: true,
-              headerRight: () => <ThemeToggle />,
-            }} />
-            <Stack.Screen name="auth" options={{ headerShown: false }} />
-          </Stack>
-          <PortalHost />
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <RouteGuard>
+              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{
+                  title: 'ExpTrack',
+                  headerTransparent: true,
+                  headerRight: () => <ThemeToggle />,
+                }} />
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+              </Stack>
+              <PortalHost />
+            </RouteGuard>
+          </AuthProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

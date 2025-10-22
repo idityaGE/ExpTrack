@@ -3,18 +3,21 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "dev": "expo start -c",
+    "dev": "expo start -c -p 3000",
     "android": "expo start -c --android",
     "ios": "expo start -c --ios",
     "web": "expo start -c --web",
     "clean": "rm -rf .expo node_modules"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@react-navigation/native": "^7.0.0",
     "@rn-primitives/label": "^1.2.0",
     "@rn-primitives/portal": "~1.3.0",
     "@rn-primitives/separator": "^1.2.0",
     "@rn-primitives/slot": "^1.2.0",
+    "@tanstack/react-query": "^5.90.5",
+    "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "^54.0.0",
@@ -28,6 +31,7 @@
     "nativewind": "^4.2.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-hook-form": "^7.65.0",
     "react-native": "0.81.5",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
@@ -37,10 +41,12 @@
     "react-native-worklets": "0.5.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^3.4.14",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@tanstack/eslint-plugin-query": "^5.91.2",
     "@types/react": "~19.1.10",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",

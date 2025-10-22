@@ -37,13 +37,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cors = CorsLayer::new()
         .allow_origin(
-            "http://localhost:3000"
+            "*"
                 .parse::<HeaderValue>()
                 .expect("Invalid CORS origin"),
         )
         .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT])
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_credentials(true);
+        .allow_credentials(false);
 
     let app_state = Arc::new(AppState { db: pool.clone() });
 
