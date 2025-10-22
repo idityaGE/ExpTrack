@@ -1,20 +1,21 @@
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function TabLayout() {
   return <NativeTabs>
     <NativeTabs.Trigger name="index">
       <Label>Home</Label>
-      <Icon sf="house.fill" drawable="ic_dialog_alert" />
+      <Icon src={<VectorIcon family={MaterialCommunityIcons} name="home" />} />
     </NativeTabs.Trigger>
 
     <NativeTabs.Trigger name="expenses">
       <Label>Expenses</Label>
-      <Icon sf="list.bullet" drawable="ic_menu_edit" />
+      <Icon src={<VectorIcon family={MaterialCommunityIcons} name="format-list-bulleted" />} />
     </NativeTabs.Trigger>
 
     <NativeTabs.Trigger name="budget">
       <Label>Budget</Label>
-      <Icon sf="l.circle" drawable="ic_menu_save" />
+      <Icon src={<VectorIcon family={MaterialCommunityIcons} name="wallet" />} />
     </NativeTabs.Trigger>
   </NativeTabs>
 }

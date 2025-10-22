@@ -1,15 +1,25 @@
-import { Stack, useRouter, useSegments } from "expo-router";
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import '@/global.css';
+
+import { NAV_THEME } from '@/lib/theme';
+import { AuthProvider, useAuth } from '@/store/auth-context';
+import { ThemeProvider } from '@react-navigation/native';
+import { PortalHost } from '@rn-primitives/portal';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useColorScheme } from 'nativewind';
+import { useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import "./global.css"
-import { AuthProvider, useAuth } from "@/store/auth-context";
-import { useEffect } from "react";
+import { ThemeToggle } from '@/components/theme-toggle';
+
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+} from 'expo-router';
 
 const RouteGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  // app/profile/[user].tsx
-  const segments = useSegments();  // segments = ["profile", "[user]"]
+  const segments = useSegments();
 
   useEffect(() => {
     const isAuthGroup = segments[0] === "auth";
@@ -22,22 +32,26 @@ const RouteGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>
 }
 
-
 export default function RootLayout() {
+  const { colorScheme } = useColorScheme();
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <SafeAreaProvider>
-          <SafeAreaView style={{ flex: 1 }}>
-            <RouteGuard>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="auth" options={{ headerShown: false }} />
-              </Stack>
-            </RouteGuard>
-          </SafeAreaView>
-        </SafeAreaProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
-  )
+    <SafeAreaProvider>
+      <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+        <AuthProvider>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{
+              title: 'ExpTrack',
+              headerTransparent: true,
+              headerRight: () => <ThemeToggle />,
+            }} />
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+          </Stack>
+          <PortalHost />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
 }
+
