@@ -9,8 +9,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ThemeToggle } from '@/components/theme-toggle';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { UserMenu } from '@/components/user-menu';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -60,7 +60,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" options={{
                   title: 'ExpTrack',
                   headerTransparent: true,
-                  headerRight: () => <ThemeToggle />,
+                  headerRight: () => <UserMenu />,
                 }} />
                 <Stack.Screen name="auth" options={{ headerShown: false }} />
               </Stack>
