@@ -5,10 +5,11 @@ const HomeLayout = () => {
   return (
     <Stack>
       <Stack.Screen
+        name="index"
         options={{
           title: 'Home',
           headerRight: () => <UserMenu />,
-          headerBlurEffect: 'light',
+          headerBlurEffect: 'regular',
         }}
       />
     </Stack>

@@ -57,11 +57,11 @@ export default function RootLayout() {
             <RouteGuard>
               <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
               <Stack>
-                <Stack.Screen 
-                  name="(tabs)" 
+                <Stack.Screen
+                  name="(tabs)"
                   options={{
                     headerShown: false,
-                  }} 
+                  }}
                 />
                 <Stack.Screen name="auth" options={{ headerShown: false }} />
               </Stack>

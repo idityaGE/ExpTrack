@@ -53,7 +53,7 @@ export function UserMenu() {
           <View className="flex-row flex-wrap gap-3 py-0.5">
             <ThemeToggle />
             <Button variant="destructive" size="sm" className="flex-1" onPress={onSignOut}>
-              <Icon as={LogOutIcon} className="size-4" />
+              <Icon as={LogOutIcon} className="size-4 text-white" />
               <Text>Sign Out</Text>
             </Button>
           </View>

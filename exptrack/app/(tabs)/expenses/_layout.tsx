@@ -1,12 +1,13 @@
 import { Stack } from "expo-router";
 import { UserMenu } from "@/components/user-menu";
+import { View } from "react-native";
 
 export default function ExpensesLayout() {
   return (
     <Stack
       screenOptions={{
         headerRight: () => <UserMenu />,
-        headerBlurEffect: 'light',
+        headerBlurEffect: 'prominent',
       }}
     >
       <Stack.Screen name="index" options={{ title: "Expenses" }} />
