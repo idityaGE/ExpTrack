@@ -40,8 +40,7 @@ pub async fn get_expense_by_id(
     Extension(user_id): Extension<Uuid>,
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<serde_json::Value> {
-    let expense_id = Uuid::parse_str(&id)
-        .map_err(|_| ApiResponse::error("Invalid expense ID format", StatusCode::BAD_REQUEST))?;
+    let expense_id = Uuid::parse_str(&id)?;
 
     let expense = sqlx::query_as::<_, ExpenseModel>(
         "SELECT * FROM expenses WHERE expense_id = $1 AND user_id = $2",
@@ -60,6 +59,23 @@ pub async fn get_expense_by_id(
             StatusCode::NOT_FOUND,
         )),
     }
+}
+
+pub async fn get_expenses_by_budget_id(
+    Path(budget_id): Path<String>,
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<serde_json::Value> {
+    let budget_id = Uuid::parse_str(&budget_id)?;
+
+    let expenses =
+        sqlx::query_as::<_, ExpenseModel>("SELECT e.* FROM expenses e WHERE e.budget_id = $1")
+            .bind(budget_id)
+            .fetch_all(&state.db)
+            .await?;
+
+    Ok(ApiResponse::success(json!({
+        "expenses": expenses
+    })))
 }
 
 pub async fn get_all_categories(

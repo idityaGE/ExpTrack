@@ -4,7 +4,8 @@ use std::sync::Arc;
 use crate::{
     AppState,
     handlers::{
-        create_expense, delete_expense, get_all_expenses, get_expense_by_id, update_expense,
+        create_expense, delete_expense, get_all_expenses, get_expense_by_id,
+        get_expenses_by_budget_id, update_expense,
     },
 };
 
@@ -16,5 +17,9 @@ pub fn get_expense_routes() -> Router<Arc<AppState>> {
             get(get_expense_by_id)
                 .put(update_expense)
                 .delete(delete_expense),
+        )
+        .route(
+            "/expense/budget/{budget_id}",
+            get(get_expenses_by_budget_id),
         )
 }
