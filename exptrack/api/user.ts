@@ -44,7 +44,7 @@ export const loginUser = async (credentials: LoginUserType): Promise<UserRespons
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new ApiError(500, 'Failed to login');
+    throw new ApiError(500, 'Failed to login: ');
   }
 };
 

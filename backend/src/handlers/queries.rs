@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    models::{BudgetModel, CategoryModel, ExpenseModel},
+    models::{BudgetModel, BudgetWithSpentModel, CategoryModel, ExpenseModel},
     ok_or_err,
     schema::{ApiResponse, ApiResult, LoginUserSchema},
     utils::{
@@ -98,8 +98,15 @@ pub async fn get_all_budgets(
     Extension(user_id): Extension<Uuid>,
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<serde_json::Value> {
-    let all_budgets = sqlx::query_as::<_, BudgetModel>(
-        "SELECT * FROM budgets WHERE user_id = $1 ORDER BY start_date DESC",
+    let all_budgets = sqlx::query_as::<_, BudgetWithSpentModel>(
+        "SELECT 
+            b.*,
+            COALESCE(SUM(e.amount), 0)::BIGINT AS total_spent
+        FROM budgets b
+        LEFT JOIN expenses e ON e.budget_id = b.budget_id
+        WHERE b.user_id = $1
+        GROUP BY b.budget_id
+        ORDER BY b.created_at DESC",
     )
     .bind(user_id)
     .fetch_all(&state.db)

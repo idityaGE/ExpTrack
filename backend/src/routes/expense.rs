@@ -19,7 +19,7 @@ pub fn get_expense_routes() -> Router<Arc<AppState>> {
                 .delete(delete_expense),
         )
         .route(
-            "/expense/budget/{budget_id}",
+            "/expenses/budget/{budget_id}",
             get(get_expenses_by_budget_id),
         )
 }
