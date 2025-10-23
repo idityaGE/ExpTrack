@@ -37,7 +37,7 @@ export function UserMenu() {
           </Avatar>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" side="bottom" className="w-72 p-0 mt-12">
+      <PopoverContent align="end" side="bottom" className="w-72 p-0">
         <View className="border-border gap-3 border-b p-3">
           <View className="flex-row items-center gap-3">
             <Avatar alt={`${user.name}'s avatar`} className="size-10">

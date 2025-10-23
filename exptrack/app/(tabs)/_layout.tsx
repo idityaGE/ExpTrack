@@ -3,7 +3,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function TabLayout() {
   return <NativeTabs>
-    <NativeTabs.Trigger name="index">
+    <NativeTabs.Trigger name="(home)">
       <Label>Home</Label>
       <Icon src={<VectorIcon family={MaterialCommunityIcons} name="home" />} />
     </NativeTabs.Trigger>

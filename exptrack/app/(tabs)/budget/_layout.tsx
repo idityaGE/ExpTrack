@@ -1,12 +1,18 @@
 import { Stack } from "expo-router"
+import { UserMenu } from "@/components/user-menu"
 
 export default function BudgetLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "Budget Overview", headerShown: false }} />
-      <Stack.Screen name="create" options={{ title: "Create Budget", headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: "Budget Details", headerShown: false }} />
-      <Stack.Screen name="update/[id]" options={{ title: "Update Budget", headerShown: false }} />
+    <Stack
+      screenOptions={{
+        headerRight: () => <UserMenu />,
+        headerBlurEffect: 'light',
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: "Budgets" }} />
+      <Stack.Screen name="create" options={{ title: "Create Budget" }} />
+      <Stack.Screen name="[id]" options={{ title: "Budget Details" }} />
+      <Stack.Screen name="update/[id]" options={{ title: "Update Budget" }} />
     </Stack>
   )
 }

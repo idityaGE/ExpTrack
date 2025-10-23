@@ -1,7 +1,7 @@
 import { type ApiResponse, ApiError } from "@/schema";
 import axios, { AxiosInstance } from "axios";
 import { Expense, CreateExpenseType, UpdateExpenseType } from "@/schema/expense";
-import { getItem } from 'expo-secure-store'
+import { getItemAsync } from 'expo-secure-store'
 
 interface ExpenseResponse {
   expense: Expense;
@@ -17,9 +17,25 @@ export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${getItem('authToken')}`,
   },
 });
+
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await getItemAsync('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 apiClient.interceptors.response.use(
   (response) => response,
