@@ -12,6 +12,7 @@ pub struct ExpenseModel {
     pub description: Option<String>,
     pub category_id: Option<i32>,
     pub user_id: Uuid,
+    pub budget_id: Option<Uuid>,
     #[serde(rename = "createdAt")]
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(rename = "updatedAt")]

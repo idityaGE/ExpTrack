@@ -54,6 +54,11 @@ pub async fn update_expense(
         }
     }
 
+    let budget_id = match &body.budget_id {
+        Some(b) => Some(Uuid::parse_str(&b)?),
+        None => existing_expense.budget_id,
+    };
+
     let name = body.name.unwrap_or(existing_expense.name);
     let amount = body.amount.unwrap_or(existing_expense.amount);
     let date = body.date.unwrap_or(existing_expense.date);
@@ -61,8 +66,8 @@ pub async fn update_expense(
     let category_id = body.category_id.or(existing_expense.category_id);
 
     let updated_expense = sqlx::query_as::<_, ExpenseModel>(
-        "UPDATE expenses SET name = $1, amount = $2, date = $3, description = $4, category_id = $5 
-         WHERE expense_id = $6 AND user_id = $7 
+        "UPDATE expenses SET name = $1, amount = $2, date = $3, description = $4, category_id = $5, budget_id = $6
+         WHERE expense_id = $7 AND user_id = $8 
          RETURNING *",
     )
     .bind(name)
@@ -70,6 +75,7 @@ pub async fn update_expense(
     .bind(date)
     .bind(description)
     .bind(category_id)
+    .bind(budget_id)
     .bind(expense_id)
     .bind(user_id)
     .fetch_one(&state.db)

@@ -64,10 +64,13 @@ pub async fn create_expense(
         ));
     }
 
-    println!("{:?}", body);
+    let budget_id = match &body.budget_id {
+        Some(b) => Some(Uuid::parse_str(&b)?),
+        None => None,
+    };
 
     let new_expense = sqlx::query_as::<_, ExpenseModel>(
-        "INSERT INTO expenses (name, amount, date, description, category_id, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
+        "INSERT INTO expenses (name, amount, date, description, category_id, user_id, budget_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
     )
     .bind(body.name)
     .bind(body.amount)
@@ -75,6 +78,7 @@ pub async fn create_expense(
     .bind(body.description)
     .bind(body.category_id)
     .bind(user_id)
+    .bind(budget_id)
     .fetch_one(&state.db)
     .await?;
 

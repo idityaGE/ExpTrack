@@ -95,4 +95,10 @@ impl From<&str> for ApiResponse<serde_json::Value> {
     }
 }
 
+impl From<uuid::Error> for ApiResponse<serde_json::Value> {
+    fn from(err: uuid::Error) -> Self {
+        Self::error(&err.to_string(), StatusCode::BAD_REQUEST)
+    }
+}
+
 pub type ApiResult<T> = Result<ApiResponse<T>, ApiResponse<serde_json::Value>>;

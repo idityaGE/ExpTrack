@@ -8,6 +8,7 @@ pub struct CreateExpenseSchema {
     pub date: chrono::NaiveDate,
     pub description: Option<String>,
     pub category_id: Option<i32>,
+    pub budget_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -18,4 +19,5 @@ pub struct UpdateExpenseSchema {
     pub date: Option<chrono::NaiveDate>,
     pub description: Option<String>,
     pub category_id: Option<i32>,
+    pub budget_id: Option<String>,
 }
