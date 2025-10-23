@@ -7,7 +7,7 @@ interface BudgetResponse {
 }
 
 interface AllBudgetResponse {
-  budgets: Budget[];
+  budgets: (Budget & { totalSpent: number })[];
 }
 
 export const createBudget = async (
