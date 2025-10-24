@@ -1,10 +1,11 @@
-import { View, Text } from 'react-native'
+import { View } from 'react-native'
 import React from 'react'
+import { CreateExpenseForm } from '@/components/expense/create-form'
 
 const CreateExpenseScreen = () => {
   return (
-    <View>
-      <Text>CreateExpenseScreen</Text>
+    <View className='flex-1 bg-primary-foreground'>
+      <CreateExpenseForm onSuccess={() => { }} />
     </View>
   )
 }

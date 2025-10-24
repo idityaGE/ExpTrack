@@ -49,7 +49,7 @@ export function SignUpForm() {
         },
         data.token
       );
-      router.replace('/(tabs)');
+      router.replace('/');
     },
     onError: (error: Error) => {
       if (error instanceof ApiError) {

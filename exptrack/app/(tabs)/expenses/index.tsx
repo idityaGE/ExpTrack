@@ -28,7 +28,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import { useRef, useState, useCallback } from 'react'
 import { useColorScheme } from 'nativewind'
-import { ExpenseCard } from '@/components/expense-card';
+import { ExpenseCard } from '@/components/expense/expense-card';
 import { Button } from '@/components/ui/button'
 
 const ExpensesScreen = () => {
