@@ -56,7 +56,6 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   })
 
-  // Category form
   const { control: categoryControl, handleSubmit: handleCategorySubmit, formState: { errors: categoryErrors }, reset: resetCategory } = useForm<CreateCategoryType>({
     resolver: zodResolver(CreateCategorySchema),
     defaultValues: {
@@ -139,8 +138,6 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const { error: expenseError, isError: isExpenseError } = createExpenseMutation;
   const { error: categoryError, isError: isCategoryError } = createCategoryMutation;
-
-
 
   return (
     <ScrollView className='flex-1 bg-background'>

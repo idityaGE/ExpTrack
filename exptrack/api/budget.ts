@@ -41,6 +41,20 @@ export const getAllBudget = async (): Promise<AllBudgetResponse> => {
   }
 }
 
+export const getBudgetById = async (budgetId: string): Promise<BudgetResponse> => {
+  try {
+    const response = await apiClient.get<ApiResponse<BudgetResponse>>(
+      '/budget/' + budgetId
+    );
+    return response.data.data
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, "Failed to fetch budget");
+  }
+}
+
 export const updateBudget = async (
   budgetId: string,
   budgetData: UpdateBudgetType
