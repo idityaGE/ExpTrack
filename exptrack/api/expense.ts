@@ -99,6 +99,20 @@ export const getExpensesByBudgetId = async (budgetId: string): Promise<AllExpens
   }
 }
 
+export const getExpenseById = async (expenseId: string): Promise<ExpenseResponse> => {
+  try {
+    const response = await apiClient.get<ApiResponse<ExpenseResponse>>(
+      '/expense/' + expenseId
+    );
+    return response.data.data
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, "Failed to fetch expense");
+  }
+}
+
 export const updateExpense = async (
   expenseId: string,
   expenseData: UpdateExpenseType
