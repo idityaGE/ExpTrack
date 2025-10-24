@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon, Plus } from 'lucide-react-native'
-import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   NativeSelectScrollView,
@@ -45,7 +44,6 @@ import { Platform, type TextInput } from 'react-native';
 import type { TriggerRef } from '@rn-primitives/select';
 
 export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
-  const router = useRouter()
   const { control, handleSubmit, formState: { errors } } = useForm<CreateExpenseType>({
     resolver: zodResolver(CreateExpenseSchema),
     defaultValues: {
@@ -66,27 +64,28 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   })
 
-  const onSubmit = handleSubmit(async (data: CreateExpenseType) => {
-    const dateObj = new Date(data.date);
-    const formattedDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
-
-    const formattedData = {
-      ...data,
-      date: formattedDate
-    };
-
-    console.log(formattedData);
-  })
-
   const { data: categoriesData, refetch: refetchCategories } = useQuery({
     queryKey: ['categories', 'all'],
     queryFn: getAllCategories,
   })
 
-
   const { data: budgetsData } = useQuery({
     queryKey: ['budgets', 'all'],
     queryFn: getAllBudget,
+  })
+
+  const createExpenseMutation = useMutation({
+    mutationFn: createExpense,
+    onSuccess: () => {
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        console.error('Create Expense Failed:', error.message);
+      } else {
+        console.error('Create Expense Failed:', 'An unexpected error occurred');
+      }
+    }
   })
 
   const createCategoryMutation = useMutation({
@@ -97,8 +96,24 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
       setDialogOpen(false);
     },
     onError: (error: Error) => {
-      console.error('Failed to create category:', error);
+      if (error instanceof ApiError) {
+        console.error('Create Category Failed:', error.message);
+      } else {
+        console.error('Create Category Failed:', 'An unexpected error occurred');
+      }
     }
+  })
+
+  const onSubmit = handleSubmit(async (data: CreateExpenseType) => {
+    const dateObj = new Date(data.date);
+    const formattedDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    const formattedData = {
+      ...data,
+      amount: Number(data.amount * 100),
+      date: formattedDate
+    };
+    createExpenseMutation.mutate(formattedData);
   })
 
   const onCategorySubmit = handleCategorySubmit(async (data: CreateCategoryType) => {
@@ -121,6 +136,9 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
     left: 12,
     right: 12,
   };
+
+  const { error: expenseError, isError: isExpenseError } = createExpenseMutation;
+  const { error: categoryError, isError: isCategoryError } = createCategoryMutation;
 
 
 
@@ -245,8 +263,8 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       <SelectTrigger className='h-12 flex-1' ref={categorySelectRef}>
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
-                      <SelectContent insets={contentInsets} className="w-full max-w-md">
-                        <NativeSelectScrollView>
+                      <SelectContent insets={contentInsets} className="max-w-md">
+                        <ScrollView>
                           <SelectGroup>
                             <SelectLabel>Select Category</SelectLabel>
                             {categoriesData?.categories?.map((category) => (
@@ -259,7 +277,7 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
                               </SelectItem>
                             ))}
                           </SelectGroup>
-                        </NativeSelectScrollView>
+                        </ScrollView>
                       </SelectContent>
                     </Select>
                   </View>
@@ -286,8 +304,8 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       render={({ field: { onChange, onBlur, value } }) => (
                         <View className="gap-3">
                           <Label nativeID="categoryName">Category Name</Label>
-                          <Input 
-                            placeholder="e.g., Food, Transport" 
+                          <Input
+                            placeholder="e.g., Food, Transport"
                             onBlur={onBlur}
                             onChangeText={onChange}
                             value={value}
@@ -301,9 +319,15 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       )}
                     />
                   </View>
+                  {isCategoryError && (
+                    <Alert variant="destructive" icon={AlertCircleIcon}>
+                      <AlertTitle className="font-medium">Failed to Create Category</AlertTitle>
+                      <AlertDescription>{categoryError?.message || "An unexpected error occurred"}</AlertDescription>
+                    </Alert>
+                  )}
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button 
+                      <Button
                         variant="outline"
                         onPress={() => {
                           resetCategory();
@@ -313,7 +337,7 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
                         <Text>Cancel</Text>
                       </Button>
                     </DialogClose>
-                    <Button 
+                    <Button
                       onPress={onCategorySubmit}
                       disabled={createCategoryMutation.isPending}
                     >
@@ -362,11 +386,21 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
             )}
           />
 
+          {isExpenseError && (
+            <Alert variant="destructive" icon={AlertCircleIcon}>
+              <AlertTitle className="font-medium">Failed to Create Expense</AlertTitle>
+              <AlertDescription>{expenseError?.message || "An unexpected error occurred"}</AlertDescription>
+            </Alert>
+          )}
+
           <Button
             className="w-full h-12 mt-4"
             onPress={onSubmit}
+            disabled={createExpenseMutation.isPending}
           >
-            <Text className='font-semibold text-base'>Create Expense</Text>
+            <Text className='font-semibold text-base'>
+              {createExpenseMutation.isPending ? 'Creating...' : 'Create Expense'}
+            </Text>
           </Button>
 
         </View>
