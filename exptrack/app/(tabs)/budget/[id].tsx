@@ -1,4 +1,4 @@
-import { View, ScrollView, ActivityIndicator } from 'react-native'
+import { View, ScrollView, ActivityIndicator, Pressable } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { getExpensesByBudgetId } from '@/api/expense'
@@ -9,6 +9,8 @@ import { ExpenseCard } from '@/components/expense/expense-card'
 import { BudgetCard } from '@/components/budget/budget-card'
 import { Expense } from '@/schema/expense'
 import { useMemo } from 'react'
+import { Icon } from '@/components/ui/icon'
+import { PencilIcon } from 'lucide-react-native'
 
 const BudgetDetails = () => {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -74,6 +76,21 @@ const BudgetDetails = () => {
 
   return (
     <View className='flex-1 bg-background'>
+      {/* Edit Button */}
+      <Pressable
+        onPress={() => router.push(`/budget/update/${id}`)}
+        className='absolute right-8 bottom-28 bg-primary rounded-full w-14 h-14 z-10 items-center justify-center shadow-lg active:opacity-80'
+        style={{
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4.65,
+        }}
+      >
+        <Icon as={PencilIcon} size={24} className='text-primary-foreground' />
+      </Pressable>
+
       <ScrollView className='flex-1'>
         <View className='p-6 gap-6 pb-24'>
           {/* Budget Overview Card */}
