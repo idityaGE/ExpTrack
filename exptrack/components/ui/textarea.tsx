@@ -19,6 +19,7 @@ function Textarea({
         className
       )}
       placeholderClassName={cn('text-muted-foreground', placeholderClassName)}
+      placeholderTextColor="rgba(148, 163, 184, 1)"
       multiline={multiline}
       numberOfLines={numberOfLines}
       textAlignVertical="top"

@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from "@/components/ui/textarea"
 import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircleIcon } from 'lucide-react-native'
+import { AlertCircleIcon, Plus } from 'lucide-react-native'
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
@@ -17,14 +17,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-// https://github.com/react-native-datetimepicker/datetimepicker?tab=readme-ov-file#usage
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Icon } from '@/components/ui/icon';
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { CreateExpenseSchema, CreateExpenseType } from "@/schema/expense"
+import { CreateCategorySchema, CreateCategoryType } from '@/schema/category';
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createExpense } from '@/api/expense'
-import { getAllCategories, } from '@/api/category';
+import { getAllCategories, createCategory } from '@/api/category';
 import { getAllBudget } from '@/api/budget';
 import { ApiError } from '@/schema'
 import { useRef, useState } from 'react';
@@ -47,6 +58,14 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   })
 
+  // Category form
+  const { control: categoryControl, handleSubmit: handleCategorySubmit, formState: { errors: categoryErrors }, reset: resetCategory } = useForm<CreateCategoryType>({
+    resolver: zodResolver(CreateCategorySchema),
+    defaultValues: {
+      categoryName: "",
+    }
+  })
+
   const onSubmit = handleSubmit(async (data: CreateExpenseType) => {
     const dateObj = new Date(data.date);
     const formattedDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -59,7 +78,7 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
     console.log(formattedData);
   })
 
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData, refetch: refetchCategories } = useQuery({
     queryKey: ['categories', 'all'],
     queryFn: getAllCategories,
   })
@@ -70,7 +89,24 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
     queryFn: getAllBudget,
   })
 
+  const createCategoryMutation = useMutation({
+    mutationFn: createCategory,
+    onSuccess: () => {
+      refetchCategories();
+      resetCategory();
+      setDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create category:', error);
+    }
+  })
+
+  const onCategorySubmit = handleCategorySubmit(async (data: CreateCategoryType) => {
+    createCategoryMutation.mutate(data);
+  })
+
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const amountFieldRef = useRef<TextInput>(null);
   const dateFieldRef = useRef<TextInput>(null);
@@ -89,23 +125,26 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
 
   return (
-    <ScrollView className='flex-1'>
-      <View>
-
-        <View className='p-4 space-y-4'>
+    <ScrollView className='flex-1 bg-background'>
+      <View className='p-6 pb-24'>
+        <View className='gap-6'>
           <Controller
             control={control}
             name="name"
             render={({ field: { onChange, onBlur, value } }) => (
-              <View>
-                <Label>Name</Label>
+              <View className='gap-2'>
+                <Label nativeID='name' className='text-base font-medium'>Name</Label>
                 <Input
                   placeholder="Expense Name"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
+                  onSubmitEditing={() => {
+                    amountFieldRef.current?.focus();
+                  }}
+                  className='h-12'
                 />
-                {errors.name && <Text className='text-red-500 mt-1'>{errors.name.message}</Text>}
+                {errors.name && <Text className='text-destructive text-sm mt-1'>{errors.name.message}</Text>}
               </View>
             )}
           />
@@ -114,16 +153,21 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
             control={control}
             name="amount"
             render={({ field: { onChange, onBlur, value } }) => (
-              <View>
-                <Label>Amount</Label>
+              <View className='gap-2'>
+                <Label nativeID='amount' className='text-base font-medium'>Amount</Label>
                 <Input
                   placeholder="Expense Amount"
                   keyboardType="numeric"
                   onBlur={onBlur}
                   onChangeText={(text) => onChange(Number(text))}
                   value={value ? value.toString() : ''}
+                  ref={amountFieldRef}
+                  onSubmitEditing={() => {
+                    dateFieldRef.current?.focus();
+                  }}
+                  className='h-12'
                 />
-                {errors.amount && <Text className='text-red-500 mt-1'>{errors.amount.message}</Text>}
+                {errors.amount && <Text className='text-destructive text-sm mt-1'>{errors.amount.message}</Text>}
               </View>
             )}
           />
@@ -132,24 +176,32 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
             control={control}
             name="date"
             render={({ field: { onChange, value } }) => (
-              <View>
-                <Label>Date</Label>
-                <Button variant="outline" onPress={() => {
-                  setShowDatePicker(true);
-                }}>
-                  <Text>{new Date(value).toLocaleDateString()}</Text>
+              <View className='gap-2'>
+                <Label nativeID='date' className='text-base font-medium'>Date</Label>
+                <Button
+                  variant="outline"
+                  className='h-12 justify-start'
+                  onPress={() => {
+                    setShowDatePicker(true);
+                  }}
+                >
+                  <Text className='text-base'>{new Date(value).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}</Text>
                 </Button>
                 {showDatePicker && (
                   <DateTimePicker
                     value={new Date(value)}
                     mode="date"
-                    display="default"
+                    display="spinner"
                     onChange={(event, selectedDate) => {
                       setShowDatePicker(false);
                       onChange(selectedDate ? selectedDate.toUTCString() : value);
                     }}
                   />)}
-                {errors.date && <Text className='text-red-500 mt-1'>{errors.date.message}</Text>}
+                {errors.date && <Text className='text-destructive text-sm mt-1'>{errors.date.message}</Text>}
               </View>
             )}
           />
@@ -158,66 +210,134 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
             control={control}
             name="description"
             render={({ field: { onChange, onBlur, value } }) => (
-              <View>
-                <Label>Description</Label>
+              <View className='gap-2'>
+                <Label nativeID='description' className='text-base font-medium'>Description</Label>
                 <Textarea
-                  placeholder="Expense Description"
+                  placeholder="Expense Description (Optional)"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
                   multiline
                   numberOfLines={4}
+                  ref={descriptionFieldRef}
                   style={{ textAlignVertical: 'top' }}
+                  onSubmitEditing={() => {
+                    categorySelectRef.current?.focus();
+                  }}
+                  className='min-h-[100px]'
                 />
-                {errors.description && <Text className='text-red-500 mt-1'>{errors.description.message}</Text>}
+                {errors.description && <Text className='text-destructive text-sm mt-1'>{errors.description.message}</Text>}
               </View>
             )}
           />
 
-          <Controller
-            control={control}
-            name="categoryId"
-            render={({ field: { onChange, value } }) => (
-              <View>
-                <Label>Category</Label>
-                <Select
-                  onValueChange={(option) => onChange(option ? Number(option.value) : undefined)}
-                >
-                  <SelectTrigger className="w-full" ref={categorySelectRef}>
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent insets={contentInsets} className="w-full max-w-md">
-                    <NativeSelectScrollView>
-                      <SelectGroup>
-                        <SelectLabel>Select Category</SelectLabel>
-                        {categoriesData?.categories?.map((category) => (
-                          <SelectItem
-                            key={category.category_id}
-                            value={category.category_id.toString()}
-                            label={category.categoryName}
-                          >
-                            <Text>{category.categoryName}</Text>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </NativeSelectScrollView>
-                  </SelectContent>
-                </Select>
-                {errors.categoryId && <Text className='text-red-500 mt-1'>{errors.categoryId.message}</Text>}
-              </View>
-            )}
-          />
+          <View className='gap-2'>
+            <Label nativeID='category' className='text-base font-medium'>Category</Label>
+            <View className='flex-row gap-2'>
+              <Controller
+                control={control}
+                name="categoryId"
+                render={({ field: { onChange, value } }) => (
+                  <View className='flex-1'>
+                    <Select
+                      onValueChange={(option) => onChange(option ? Number(option.value) : undefined)}
+                    >
+                      <SelectTrigger className='h-12 flex-1' ref={categorySelectRef}>
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent insets={contentInsets} className="w-full max-w-md">
+                        <NativeSelectScrollView>
+                          <SelectGroup>
+                            <SelectLabel>Select Category</SelectLabel>
+                            {categoriesData?.categories?.map((category) => (
+                              <SelectItem
+                                key={category.category_id}
+                                value={category.category_id.toString()}
+                                label={category.categoryName}
+                              >
+                                <Text>{category.categoryName}</Text>
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </NativeSelectScrollView>
+                      </SelectContent>
+                    </Select>
+                  </View>
+                )}
+              />
+
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" className='h-12 w-12'>
+                    <Icon as={Plus} size={20} />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Create new Category</DialogTitle>
+                    <DialogDescription>
+                      Add a new category to organize your expenses.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <View className="gap-4 py-4">
+                    <Controller
+                      control={categoryControl}
+                      name="categoryName"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <View className="gap-3">
+                          <Label nativeID="categoryName">Category Name</Label>
+                          <Input 
+                            placeholder="e.g., Food, Transport" 
+                            onBlur={onBlur}
+                            onChangeText={onChange}
+                            value={value}
+                          />
+                          {categoryErrors.categoryName && (
+                            <Text className='text-destructive text-sm'>
+                              {categoryErrors.categoryName.message}
+                            </Text>
+                          )}
+                        </View>
+                      )}
+                    />
+                  </View>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button 
+                        variant="outline"
+                        onPress={() => {
+                          resetCategory();
+                          setDialogOpen(false);
+                        }}
+                      >
+                        <Text>Cancel</Text>
+                      </Button>
+                    </DialogClose>
+                    <Button 
+                      onPress={onCategorySubmit}
+                      disabled={createCategoryMutation.isPending}
+                    >
+                      <Text>
+                        {createCategoryMutation.isPending ? 'Adding...' : 'Add Category'}
+                      </Text>
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </View>
+            {errors.categoryId && <Text className='text-destructive text-sm mt-1'>{errors.categoryId.message}</Text>}
+          </View>
 
           <Controller
             control={control}
             name="budgetId"
             render={({ field: { onChange, value } }) => (
-              <View>
-                <Label>Budget</Label>
+              <View className='gap-2'>
+                <Label nativeID='budget' className='text-base font-medium'>Budget (Optional)</Label>
                 <Select
                   onValueChange={(option) => onChange(option?.value)}
                 >
-                  <SelectTrigger className="w-full" ref={budgetSelectRef}>
+                  <SelectTrigger className='w-full h-12' ref={budgetSelectRef} >
                     <SelectValue placeholder="Select Budget" />
                   </SelectTrigger>
                   <SelectContent insets={contentInsets} className="w-full max-w-md">
@@ -237,20 +357,19 @@ export const CreateExpenseForm = ({ onSuccess }: { onSuccess: () => void }) => {
                     </NativeSelectScrollView>
                   </SelectContent>
                 </Select>
-                {errors.budgetId && <Text className='text-red-500 mt-1'>{errors.budgetId.message}</Text>}
+                {errors.budgetId && <Text className='text-destructive text-sm mt-1'>{errors.budgetId.message}</Text>}
               </View>
             )}
           />
 
           <Button
-            className="w-full"
+            className="w-full h-12 mt-4"
             onPress={onSubmit}
           >
-            <Text>{'Create'}</Text>
+            <Text className='font-semibold text-base'>Create Expense</Text>
           </Button>
 
         </View>
-
       </View>
     </ScrollView>
   )
