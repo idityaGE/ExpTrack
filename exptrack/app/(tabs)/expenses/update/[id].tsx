@@ -1,5 +1,6 @@
-import { View, Text } from 'react-native'
+import { View } from 'react-native'
 import React from 'react'
+import { Text } from '@/components/ui/text'
 import { useLocalSearchParams } from 'expo-router'
 
 const UpdateExpenseScreen = () => {

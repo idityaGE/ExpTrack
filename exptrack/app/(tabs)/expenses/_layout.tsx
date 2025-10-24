@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { UserMenu } from "@/components/user-menu";
-import { View } from "react-native";
+import { Drawer } from 'expo-router/drawer';
 
 export default function ExpensesLayout() {
   return (
