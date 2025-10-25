@@ -1,13 +1,15 @@
-# A simple project Expense Tracker App
+## A simple project Expense Tracker App
 
-> ===========================================
-> FrontEnd - Expo, Nativewind, React Native Reusables, Tanstack Query
-===========================================
-> Backend - Rust, Axum, SQLx, Postgres 
-===========================================
+
+> **FrontEnd** - Expo, Nativewind, React Native Reusables, Tanstack Query
+
+> **Backend** - Rust, Axum, SQLx, Postgres 
+
 
 
 Demo Video :
+
+https://github.com/user-attachments/assets/a8398850-a77f-44e4-a0cc-2bb290187336.mp4
 
 
 
