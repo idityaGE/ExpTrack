@@ -1,28 +1,29 @@
-Backend : Rust, Axum, SQLx, PostgreSQL
-Frontend : Expo (Mobile App), TypeScript
+# A simple project Expense Tracker App
 
-/user :
-- `/login` : POST
-- `/register` : POST
-- `/profile` : GET, PUT
-- `/logout` : Remove token from client side
-
-/expense :
-- `/` : GET (List all expenses), POST (Create new expense)
-- `/:id` : GET (Get expense by ID), PUT (Update expense by ID), DELETE (Delete expense by ID)
-
-/category :
-- `/` : GET (List all categories), POST (Create new category)
-- `/:id` : DELETE (Delete category by ID)
-
-/budget :
-- `/` : GET (Get budget), PUT (Update budget), POST (Set budget)
-- `/reset` : POST (Reset budget)
+> ===========================================
+> FrontEnd - Expo, Nativewind, React Native Reusables, Tanstack Query
+===========================================
+> Backend - Rust, Axum, SQLx, Postgres 
+===========================================
 
 
-### Features
-[ ] Calendar view for expenses
-[ ] Spent category wise
-[ ] Filter expenses by date range, category
-[ ] Budget alerts
-[ ] Export data to CSV
+Demo Video :
+
+
+
+Backend Features : 
+- routing in axum
+- layers middleware in axum
+- managing state in axum
+- using psql database with sqlx
+- a consistence API response by extending the IntoResponse trait
+- decresing boilerplate code by implemnting From<T> trait
+
+
+Frontend Feature :
+- routing in expo (expo router)
+- nativewind (similar to tailwindcss)
+- React Native Resusable UI (similar to Shadcn UI)
+- Tanstack Query in React Native
+- Store secure data locally like (jwt token)
+- React Hook Form with zod validation
