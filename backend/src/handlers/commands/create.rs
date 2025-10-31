@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    models::{BudgetModel, CategoryModel, ExpenseModel, UserModel},
+    models::{BudgetModel, CategoryModel, ExpenseModel, NotificationModel, UserModel},
     schema::{
         ApiResponse, ApiResult, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
         CreateUserSchema,
@@ -77,10 +77,66 @@ pub async fn create_expense(
     .bind(body.date)
     .bind(body.description)
     .bind(body.category_id)
-    .bind(user_id)
-    .bind(budget_id)
+    .bind(&user_id)
+    .bind(&budget_id)
     .fetch_one(&state.db)
     .await?;
+
+    if let Some(budget_id) = budget_id {
+        let db_state = state.db.clone();
+        tokio::spawn(async move {
+            let budget_result = sqlx::query_as::<_, BudgetModel>(
+                "SELECT * FROM budgets WHERE budget_id = $1 AND user_id = $2",
+            )
+            .bind(budget_id)
+            .bind(user_id)
+            .fetch_optional(&db_state)
+            .await;
+
+            if let Ok(Some(budget)) = budget_result {
+                let total_spent_result: Result<Option<i64>, _> = sqlx::query_scalar(
+                    "SELECT COALESCE(SUM(amount), 0)::BIGINT FROM expenses WHERE budget_id = $1",
+                )
+                .bind(budget_id)
+                .fetch_one(&db_state)
+                .await;
+
+                if let Ok(Some(total_spent)) = total_spent_result {
+                    let budget_amount = budget.amount;
+                    let usage_percentage = (total_spent as f64 / budget_amount as f64) * 100.0;
+
+                    let msg = if usage_percentage >= 100.0 {
+                        Some(format!(
+                            "🚨 BUDGET ALERT: Budget '{}' (ID: {}) has been EXCEEDED! \
+                            Total spent: {} / Budget: {} ({:.1}%)",
+                            budget.name, budget_id, total_spent, budget_amount, usage_percentage
+                        ))
+                    } else if usage_percentage >= 80.0 {
+                        Some(format!(
+                            "⚠️  BUDGET WARNING: Budget '{}' (ID: {}) is at {:.1}% usage. \
+                            Total spent: {} / Budget: {}",
+                            budget.name, budget_id, usage_percentage, total_spent, budget_amount
+                        ))
+                    } else {
+                        None
+                    };
+
+                    if msg.is_some() {
+                        let _ = sqlx::query_as::<_, NotificationModel>(
+                            "INSERT INTO notifications (user_id, category, message) VALUES ($1, $2, $3)"
+                        )
+                        .bind(&user_id)
+                        .bind("BUDGET ALERT".to_string())
+                        .bind(msg)
+                        .fetch_one(&db_state)
+                        .await;
+                    }
+                } else {
+                    eprintln!("Failed to calculate total spent for budget {}", budget_id);
+                }
+            }
+        });
+    }
 
     Ok(ApiResponse::success(json!({
         "expense": new_expense

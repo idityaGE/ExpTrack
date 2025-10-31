@@ -53,6 +53,17 @@ CREATE TABLE IF NOT EXISTS expenses (
     CONSTRAINT fk_expense_budget FOREIGN KEY (budget_id) REFERENCES budgets(budget_id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+    notification_id UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
+    user_id         UUID NOT NULL,
+    category        VARCHAR(100) NOT NULL,
+    message         TEXT NOT NULL,
+    is_sent         BOOLEAN DEFAULT FALSE,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notification_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 -- INSERT GLOBAL CATEGORIES
 INSERT INTO categories (user_id, category_name) VALUES
     (NULL, 'Food'),
@@ -68,6 +79,7 @@ CREATE INDEX IF NOT EXISTS idx_expense_user ON expenses(user_id);
 CREATE INDEX IF NOT EXISTS idx_expense_category ON expenses(category_id);
 CREATE INDEX IF NOT EXISTS idx_expense_budget ON expenses(budget_id);
 CREATE INDEX IF NOT EXISTS idx_budget_user ON budgets(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_user ON notifications(user_id);
 
 -- TRIGGER FUNCTION FOR updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -89,4 +101,7 @@ CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

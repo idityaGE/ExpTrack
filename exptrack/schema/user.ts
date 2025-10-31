@@ -17,7 +17,7 @@ export type RegisterUserType = z.infer<typeof RegisterUser>;
 export const UserSchema = z.object({
   user_id: z.string(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   password_hash: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

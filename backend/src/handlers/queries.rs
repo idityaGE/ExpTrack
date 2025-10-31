@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     Extension, Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 use serde_json::json;
@@ -12,6 +12,7 @@ use crate::{
     AppState,
     models::{BudgetModel, BudgetWithSpentModel, CategoryModel, ExpenseModel},
     ok_or_err,
+    routes::expense::Params,
     schema::{ApiResponse, ApiResult, LoginUserSchema},
     utils::{
         helper::{get_user_by_email, validate_email},
@@ -20,19 +21,51 @@ use crate::{
 };
 
 pub async fn get_all_expenses(
+    Query(param): Query<Params>,
     Extension(user_id): Extension<Uuid>,
     State(state): State<Arc<AppState>>,
 ) -> ApiResult<serde_json::Value> {
-    let all_expenses = sqlx::query_as::<_, ExpenseModel>(
-        "SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC",
-    )
-    .bind(user_id)
-    .fetch_all(&state.db)
-    .await?;
+    let total_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM expenses WHERE user_id = $1")
+        .bind(user_id)
+        .fetch_one(&state.db)
+        .await?;
 
-    Ok(ApiResponse::success(json!({
-        "expenses": all_expenses
-    })))
+    let all_expenses = if let (Some(limit), Some(offset)) = (param.limit, param.offset) {
+        sqlx::query_as::<_, ExpenseModel>(
+            "SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC LIMIT $2 OFFSET $3",
+        )
+        .bind(user_id)
+        .bind(limit as i64)
+        .bind(offset as i64)
+        .fetch_all(&state.db)
+        .await?
+    } else {
+        sqlx::query_as::<_, ExpenseModel>(
+            "SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC",
+        )
+        .bind(user_id)
+        .fetch_all(&state.db)
+        .await?
+    };
+
+    let response = if param.limit.is_some() || param.offset.is_some() {
+        json!({
+            "expenses": all_expenses,
+            "pagination": {
+                "total": total_count,
+                "limit": param.limit,
+                "offset": param.offset,
+                "count": all_expenses.len()
+            }
+        })
+    } else {
+        json!({
+            "expenses": all_expenses,
+            "total": total_count
+        })
+    };
+
+    Ok(ApiResponse::success(response))
 }
 
 pub async fn get_expense_by_id(
