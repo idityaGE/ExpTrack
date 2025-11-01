@@ -9,7 +9,7 @@ import { router } from "expo-router"
 
 
 const BACKGROUND_TASK_NAME = 'CHECK_NOTIFICATIONS_TASK';
-const MINIMUM_INTERVAL = 30; // 30 minutes
+const MINIMUM_INTERVAL = 15; // 15 minutes
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

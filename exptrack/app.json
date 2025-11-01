@@ -24,7 +24,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.idityage.exptrack"
     },
     "web": {
       "bundler": "metro",
@@ -40,6 +41,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b78a054f-155a-4bb2-8063-4472c6450146"
+      }
+    },
+    "owner": "idityage"
   }
 }
