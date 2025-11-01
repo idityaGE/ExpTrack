@@ -11,6 +11,15 @@ interface AllExpenseResponse {
   expenses: Expense[];
 }
 
+export interface AllExpenseResponseWithPagination extends AllExpenseResponse {
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    count: number;
+  };
+}
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080";
 
 export const apiClient: AxiosInstance = axios.create({
@@ -75,6 +84,21 @@ export const getAllExpense = async (): Promise<AllExpenseResponse> => {
   try {
     const response = await apiClient.get<ApiResponse<AllExpenseResponse>>(
       '/expense'
+    );
+    return response.data.data
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, "Failed to fetch expenses");
+  }
+}
+
+export const getExpensePaginated = async ({ pageParam }: { pageParam: number }): Promise<AllExpenseResponseWithPagination> => {
+  const limit = 10;
+  try {
+    const response = await apiClient.get<ApiResponse<AllExpenseResponseWithPagination>>(
+      `/expense?limit=${limit}&offset=${(pageParam - 1) * limit}`
     );
     return response.data.data
   } catch (error) {

@@ -1,4 +1,4 @@
-import { View, Pressable, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Pressable, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
@@ -7,10 +7,11 @@ import { getAllBudget } from '@/api/budget'
 import { PlusIcon } from 'lucide-react-native'
 import { Icon } from '@/components/ui/icon'
 import { BudgetCard } from '@/components/budget/budget-card'
+import { FlashList } from '@shopify/flash-list'
 
 const BudgetScreen = () => {
   const router = useRouter()
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['budgets', 'all'],
     queryFn: getAllBudget,
   })
@@ -31,45 +32,58 @@ const BudgetScreen = () => {
         <Icon as={PlusIcon} size={28} className='text-primary-foreground' />
       </Pressable>
 
-      <ScrollView className='flex-1'>
-        <View className='p-4 gap-3 pb-24'>
-          {isLoading && (
-            <View className='flex-1 items-center justify-center py-12'>
-              <ActivityIndicator size="large" />
-              <Text className='text-muted-foreground mt-4'>Loading budgets...</Text>
-            </View>
-          )}
-
-          {error && (
-            <Card className='border-destructive'>
-              <CardContent className='pt-6'>
-                <Text className='text-destructive text-center'>
-                  Error loading budgets: {error.message}
-                </Text>
-              </CardContent>
-            </Card>
-          )}
-
-          {data && data.budgets.length === 0 && !isLoading && (
-            <View className='flex-1 items-center justify-center py-20'>
-              <Text className='text-muted-foreground text-center text-lg'>
-                No budgets found.
-              </Text>
-              <Text className='text-muted-foreground text-center mt-2'>
-                Tap the + button to create your first budget
-              </Text>
-            </View>
-          )}
-
-          {data && data.budgets.map((budget) => (
-            <BudgetCard 
-              key={budget.budget_id} 
-              budget={budget} 
-              totalSpent={budget.totalSpent} 
-            />
-          ))}
+      {isLoading && (
+        <View className='flex-1 items-center justify-center py-12'>
+          <ActivityIndicator size="large" />
+          <Text className='text-muted-foreground mt-4'>Loading budgets...</Text>
         </View>
-      </ScrollView>
+      )}
+
+      {error && (
+        <View className='p-4'>
+          <Card className='border-destructive'>
+            <CardContent className='pt-6'>
+              <Text className='text-destructive text-center'>
+                Error loading budgets: {error.message}
+              </Text>
+            </CardContent>
+          </Card>
+        </View>
+      )}
+
+      {!isLoading && !error && data && data.budgets.length === 0 && (
+        <View className='flex-1 items-center justify-center py-20'>
+          <Text className='text-muted-foreground text-center text-lg'>
+            No budgets found.
+          </Text>
+          <Text className='text-muted-foreground text-center mt-2'>
+            Tap the + button to create your first budget
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !error && data && data.budgets.length > 0 && (
+        <FlashList
+          data={data.budgets}
+          keyExtractor={(item) => item.budget_id}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl
+              tintColor={'blue'}
+              refreshing={isRefetching}
+              onRefresh={refetch}
+            />
+          }
+          renderItem={({ item }) => (
+            <View style={{ marginBottom: 12 }}>
+              <BudgetCard
+                budget={item}
+                totalSpent={item.totalSpent}
+              />
+            </View>
+          )}
+        />
+      )}
     </View>
   )
 }

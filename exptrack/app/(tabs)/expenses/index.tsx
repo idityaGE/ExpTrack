@@ -1,7 +1,6 @@
 import { Text } from '@/components/ui/text'
-import { getAllExpense, deleteExpense } from '@/api/expense'
-import { useQuery } from '@tanstack/react-query'
-import { ScrollView, View, Pressable, ActivityIndicator } from 'react-native'
+import { getExpensePaginated, deleteExpense } from '@/api/expense'
+import { View, Pressable, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Expense } from '@/schema/expense'
 import {
@@ -26,19 +25,45 @@ import {
   BottomSheetView,
   BottomSheetModalProvider,
 } from '@gorhom/bottom-sheet';
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useMemo } from 'react'
 import { useColorScheme } from 'nativewind'
 import { ExpenseCard } from '@/components/expense/expense-card';
 import { Button } from '@/components/ui/button'
+
+import { FlashList } from '@shopify/flash-list'
+import { RefreshControl } from 'react-native'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 const ExpensesScreen = () => {
   const router = useRouter()
   const { colorScheme } = useColorScheme()
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['expenses', 'all'],
-    queryFn: getAllExpense,
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+    isRefetching,
+    error,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: ['expenses', 'paginated'],
+    initialPageParam: 1,
+    queryFn: getExpensePaginated,
+    getNextPageParam: (lastPage, allPages) => {
+      const nextOffset = lastPage.pagination.offset + lastPage.pagination.limit;
+      if (nextOffset < lastPage.pagination.total) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    }
   })
+
+  const expenses = useMemo(
+    () => data?.pages.flatMap((page) => page.expenses) || [],
+    [data]
+  )
 
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
@@ -80,46 +105,71 @@ const ExpensesScreen = () => {
           <Icon as={PlusIcon} size={28} className='text-primary-foreground' />
         </Pressable>
 
-        <ScrollView className='flex-1'>
-          <View className='p-4 gap-3 pb-24'>
-            {isLoading && (
-              <View className='flex-1 items-center justify-center py-12'>
-                <ActivityIndicator size="large" />
-                <Text className='text-muted-foreground mt-4'>Loading expenses...</Text>
-              </View>
-            )}
-
-            {error && (
-              <Card className='border-destructive'>
-                <CardContent className='pt-6'>
-                  <Text className='text-destructive text-center'>
-                    Error loading expenses: {error.message}
-                  </Text>
-                </CardContent>
-              </Card>
-            )}
-
-            {data && data.expenses.length === 0 && !isLoading && (
-              <View className='flex-1 items-center justify-center py-20'>
-                <Text className='text-muted-foreground text-center text-lg'>
-                  No expenses found.
-                </Text>
-                <Text className='text-muted-foreground text-center mt-2'>
-                  Tap the + button to add your first expense
-                </Text>
-              </View>
-            )}
-
-            {data && data.expenses.map((expense: Expense) => (
-              <ExpenseCard
-                key={expense.expense_id}
-                expense={expense}
-                onPress={() => handlePresentModalPress(expense)}
-              />
-            ))}
-
+        {isLoading && (
+          <View className='flex-1 items-center justify-center py-12'>
+            <ActivityIndicator size="large" />
+            <Text className='text-muted-foreground mt-4'>Loading expenses...</Text>
           </View>
-        </ScrollView>
+        )}
+
+        {error && (
+          <View className='p-4'>
+            <Card className='border-destructive'>
+              <CardContent className='pt-6'>
+                <Text className='text-destructive text-center'>
+                  Error loading expenses: {error.message}
+                </Text>
+              </CardContent>
+            </Card>
+          </View>
+        )}
+
+        {!isLoading && !error && expenses.length === 0 && (
+          <View className='flex-1 items-center justify-center py-20'>
+            <Text className='text-muted-foreground text-center text-lg'>
+              No expenses found.
+            </Text>
+            <Text className='text-muted-foreground text-center mt-2'>
+              Tap the + button to add your first expense
+            </Text>
+          </View>
+        )}
+
+        {!isLoading && !error && expenses.length > 0 && (
+          <FlashList
+            data={expenses}
+            keyExtractor={(item) => item.expense_id}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            onEndReachedThreshold={0.2}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            refreshControl={
+              <RefreshControl
+                tintColor={'blue'}
+                refreshing={isRefetching}
+                onRefresh={refetch}
+              />
+            }
+            renderItem={({ item }) => (
+              <View style={{ marginBottom: 12 }}>
+                <ExpenseCard
+                  expense={item}
+                  onPress={() => handlePresentModalPress(item)}
+                />
+              </View>
+            )}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20 }}>
+                  <ActivityIndicator color="blue" size="small" />
+                </View>
+              ) : null
+            }
+          />
+        )}
 
         <BottomSheetModal
           ref={bottomSheetModalRef}
