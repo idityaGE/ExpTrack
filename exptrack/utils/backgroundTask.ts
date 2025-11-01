@@ -5,11 +5,9 @@ import { getItemAsync } from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { useEffect } from 'react';
 import { router } from "expo-router"
-// import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-const BACKGROUND_TASK_NAME = 'CHECK_NOTIFICATIONS_TASK';
-const MINIMUM_INTERVAL = 15; // 15 minutes
+const BACKGROUND_FETCH_TASK = 'CHECK_NOTIFICATIONS_TASK';
+const MINIMUM_INTERVAL = 15 * 60; // 15 minutes in seconds
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -20,78 +18,100 @@ Notifications.setNotificationHandler({
   }),
 });
 
-TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
+TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   try {
+    console.log('Background task: Checking for notifications...');
 
     const token = await getItemAsync("authToken");
+
+    if (!token) {
+      console.log('No auth token found, skipping notification check');
+      return BackgroundTask.BackgroundTaskResult.Failed;
+    }
+
     const response = await fetch(process.env.EXPO_PUBLIC_API_URL! + "/notification", {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       }
-    })
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch notifications:', response.status);
+      return BackgroundTask.BackgroundTaskResult.Failed;
+    }
 
     const { data } = await response.json();
 
-    if (data.count > 0) {
+    if (data?.count > 0 && data.notifications) {
+      console.log(`Found ${data.count} notifications`);
+
       for (let i = 0; i < data.count; i++) {
+        const notification = data.notifications[i];
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: data.notifications[i].category,
-            body: data.notifications[i].message,
+            title: notification.category || 'Notification',
+            body: notification.message || '',
             data: {
               budget_id: (() => {
-                const msg = data.notifications[i].message ?? '';
+                const msg = notification.message ?? '';
                 const match = msg.match(/\(ID:\s*([a-f0-9-]+)\)/i);
                 return match ? match[1] : undefined;
               })(),
             },
           },
-          trigger: { // set null for sending immediately
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: 1,
-          }
-        })
+          trigger: null, // Deliver immediately
+        });
       }
+
+      return BackgroundTask.BackgroundTaskResult.Success;
     }
 
+    console.log('No new notifications');
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (error: unknown) {
-    console.error("Failed to fetch the notifications")
+    console.error("Failed to fetch notifications:", error);
     return BackgroundTask.BackgroundTaskResult.Failed;
   }
 })
 
 export const registerBackgroundTask = async () => {
   try {
+    // Setup notification channel for Android
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('ExpTrackNotificationChannel', {
-        name: 'A channel is needed for the permissions prompt to appear',
+        name: 'ExpTrack Notifications',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
       });
     }
 
+    // Request notification permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
+
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
+
     if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!');
+      console.warn('Notification permissions not granted');
       return;
     }
 
-    if (!await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK_NAME)) {
-      await BackgroundTask.registerTaskAsync(BACKGROUND_TASK_NAME, {
-        minimumInterval: MINIMUM_INTERVAL,
-      })
-    }
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
 
-    console.log('Background task registered');
+    if (!isRegistered) {
+      await BackgroundTask.registerTaskAsync(BACKGROUND_FETCH_TASK, {
+        minimumInterval: MINIMUM_INTERVAL, // 15 minutes
+      });
+      console.log('Background task registered successfully');
+    } else {
+      console.log('Background task already registered');
+    }
   } catch (error) {
     console.error('Failed to register background task:', error);
   }
