@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    models::{BudgetModel, CategoryModel, ExpenseModel, NotificationModel, UserModel},
+    models::{BudgetModel, CategoryModel, ExpenseModel, UserModel},
     schema::{
         ApiResponse, ApiResult, CreateBudgetSchema, CreateCategorySchema, CreateExpenseSchema,
         CreateUserSchema,
@@ -122,13 +122,13 @@ pub async fn create_expense(
                     };
 
                     if msg.is_some() {
-                        let _ = sqlx::query_as::<_, NotificationModel>(
+                        let _ = sqlx::query(
                             "INSERT INTO notifications (user_id, category, message) VALUES ($1, $2, $3)"
                         )
                         .bind(&user_id)
-                        .bind("BUDGET ALERT".to_string())
+                        .bind("BUDGET_ALERT")
                         .bind(msg)
-                        .fetch_one(&db_state)
+                        .execute(&db_state)
                         .await;
                     }
                 } else {
