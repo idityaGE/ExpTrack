@@ -33,7 +33,10 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-background-task",
+      "expo-task-manager"
     ],
     "experiments": {
       "typedRoutes": true

@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import { registerBackgroundTask, useNotificationObserver } from '@/utils/backgroundTask'
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -54,6 +55,12 @@ const RouteGuard = ({ children }: { children: React.ReactNode }) => {
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+
+  useNotificationObserver();
+
+  useEffect(() => {
+    registerBackgroundTask()
+  }, [])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
