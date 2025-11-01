@@ -13,6 +13,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import { registerBackgroundTask, useNotificationObserver } from '@/utils/backgroundTask'
+import * as TaskManager from "expo-task-manager";
+
+TaskManager.getRegisteredTasksAsync().then((tasks) => {
+  console.log(tasks);
+});
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,

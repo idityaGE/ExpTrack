@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { router } from "expo-router"
 
 const BACKGROUND_FETCH_TASK = 'CHECK_NOTIFICATIONS_TASK';
+const NOTIFICATION_CHANNEL = 'EXPTRACK_NOTIFICATIONS'
 const MINIMUM_INTERVAL = 15 * 60; // 15 minutes in seconds
 
 Notifications.setNotificationHandler({
@@ -61,7 +62,10 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
               })(),
             },
           },
-          trigger: null, // Deliver immediately
+          trigger: {
+            seconds: 1,
+            channelId: NOTIFICATION_CHANNEL
+          }
         });
       }
 
@@ -81,7 +85,7 @@ export const registerBackgroundTask = async () => {
     // Setup notification channel for Android
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('ExpTrackNotificationChannel', {
-        name: 'ExpTrack Notifications',
+        name: NOTIFICATION_CHANNEL,
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
